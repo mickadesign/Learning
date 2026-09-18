@@ -1,0 +1,8 @@
+# Flashcards
+
+> A quiz site that plays flashcard decks and lets anyone — people or agents — write a new deck about any topic. Learning new things should be fun.
+
+Agents on the page get tools on `document.modelContext` (WebMCP) as soon as it loads: read the card format, start a deck, add cards in batches, publish, import, generate, play, delete.
+
+- [Capabilities for agents](/agents.md): every tool, its inputs and outputs, the card format, the house style.
+- [Source](https://github.com/mickadesign/Learning): fork it to run your own.

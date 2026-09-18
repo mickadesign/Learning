@@ -15,8 +15,10 @@ Built with **Next.js 16 (App Router)**, **Tailwind CSS 4**, and
   deck to play, or type anything and Claude plans four levels and writes
   them one at a time; the quiz opens on the first level while the rest are
   written. Decks are saved in the browser.
-- **WebMCP tools** registered on page load, so browser agents can list
-  decks, create one from a topic, import cards they wrote, and play. See
+- **Built for agents too.** On load the page registers ten WebMCP tools on
+  `document.modelContext`: read the format, start a deck, add cards in
+  batches, publish, import, generate, play, delete. The reference is served
+  at [`/agents.md`](public/agents.md); the wiring is in
   [`docs/webmcp.md`](docs/webmcp.md).
 - **Sequential levels** of ten cards, each unlocked by passing the one before
   it, with a hidden bonus level on a shorter clock.
@@ -60,8 +62,12 @@ Three layers, from lightest to deepest:
 Type a topic. `POST /api/decks/plan` asks Claude for the deck's metadata and
 four level briefs; `POST /api/decks/level` writes ten cards per level, one
 request each, so the first level is playable while the others arrive. Decks
-land in `localStorage` and show up in the combobox next time. Browser agents
-get the same actions as WebMCP tools ([`docs/webmcp.md`](docs/webmcp.md)).
+land in `localStorage` and show up in the combobox next time.
+
+An agent on the page doesn't need the UI or the key: it can write the deck
+itself through the WebMCP tools — `start_flashcard_deck`, `add_flashcards`,
+`publish_flashcard_deck` — and read everything it needs from
+`get_flashcard_format`. The full reference is [`/agents.md`](public/agents.md).
 
 > Anyone who can reach a deployment with a key can make it spend. Set a
 > spending limit on the key, or put the site behind auth, before sharing a
@@ -133,6 +139,7 @@ src/lib/deck.ts             ← schema, validation, verdict + share text helpers
 src/components/quiz/        ← the quiz modal (levels, cards, timer, results)
 src/components/home-screen  ← landing page: the topic combobox + the quiz
 src/lib/webmcp.ts           ← WebMCP tools registered on page load
+public/agents.md            ← the capabilities reference served to agents
 src/lib/server/generate.ts  ← plan + write levels with Claude (API routes, CLI)
 src/app/api/decks/          ← status, plan, level routes
 src/lib/deck-store.ts       ← decks saved in the browser

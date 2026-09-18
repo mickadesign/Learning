@@ -1,46 +1,68 @@
 # WebMCP tools
 
-When the page loads it registers five tools on `document.modelContext`, the
-[WebMCP](https://webmachinelearning.github.io/webmcp/) API. An agent in the
-browser — Chromium's built-in WebMCP, the [MCP-B](https://docs.mcp-b.ai)
-extension, or anything else that speaks the API — can list decks, write a new
-one from a topic, import cards it authored itself, and open the quiz.
+When the page loads it registers its flashcard actions as tools on
+`document.modelContext`, the [WebMCP](https://webmachinelearning.github.io/webmcp/)
+API. An agent in the browser — Chromium's built-in WebMCP, the
+[MCP-B](https://docs.mcp-b.ai) extension, or anything else that speaks the
+API — can read the card format, write a deck in steps, import one, have the
+site's AI write one, play, and clean up.
 
-The registration lives in [`src/lib/webmcp.ts`](../src/lib/webmcp.ts). It
-loads `@mcp-b/global`, which uses the browser's native `modelContext` when
-there is one and installs a polyfill otherwise, so the tools exist everywhere.
+**The full reference — every tool, its inputs and outputs, the card format
+and the house style — is served with the site at
+[`/agents.md`](../public/agents.md)** (`public/agents.md` in the repository),
+with a short pointer at `/llms.txt`. The landing page links to it as "For
+agents", and the `<head>` carries
+`<link rel="alternate" type="text/markdown" href="/agents.md">`.
 
-| Tool | Input | What it does |
-| --- | --- | --- |
-| `list_flashcard_decks` | — | The built-in deck and every deck saved in this browser, with levels, card counts, and the visitor's best scores. |
-| `create_flashcards` | `topic`, optional `notes` | Plans and writes a deck with Claude and opens the quiz on its first level; the other levels arrive in the background. Needs `ANTHROPIC_API_KEY` on the server. |
-| `play_flashcards` | optional `slug` | Opens the quiz for a deck (the built-in one by default). |
-| `get_flashcard_format` | — | The deck's JSON Schema — every card parameter — plus the rules the site enforces. |
-| `import_flashcards` | `deck` | Validates a deck the agent wrote, saves it in this browser, and opens it. Errors name the JSON path of each problem. |
+## The tools at a glance
 
-Every tool returns a text summary and a `structuredContent` object.
+| Tool | Purpose |
+| --- | --- |
+| `get_flashcard_format` | Read first: workflow, JSON Schema, example cards, rules, house style. |
+| `list_flashcard_decks` | Built-in and saved decks with best scores, plus drafts. |
+| `get_flashcard_deck` | Full JSON of a deck or draft. |
+| `start_flashcard_deck` | Begin a draft: metadata and levels without cards. |
+| `add_flashcards` | Append cards to a level of a draft, in batches; ids assigned. |
+| `publish_flashcard_deck` | Validate, save, and open a draft. |
+| `import_flashcards` | Save a complete deck in one call. |
+| `generate_flashcards` | Have the server's Claude write a deck (needs a key). |
+| `play_flashcards` | Open the quiz on a deck. |
+| `delete_flashcard_deck` | Remove a saved deck or draft. |
+
+## How it's wired
+
+- `src/lib/webmcp.ts` defines the tools and registers them from the landing
+  page through `useWebMcpTools`. The page lends it the handlers that touch
+  React state (open a deck, generate, list, find, delete); everything else
+  goes straight to `src/lib/deck-store.ts` (saved decks and drafts in
+  `localStorage`).
+- Input schemas are JSON Schema. The complex ones (`start_flashcard_deck`,
+  `add_flashcards`, `import_flashcards`) are derived at runtime from the zod
+  schemas in `src/lib/deck.ts`, so the tools and the site can never disagree
+  about the format. Every input is re-validated with zod inside the tool.
+- `@mcp-b/global` is imported lazily in the browser. It wraps the native API
+  when present and installs a polyfill otherwise.
+- Example cards, the rules and the house style live in `src/lib/deck.ts`
+  (`EXAMPLE_CARDS`, `AUTHORING_RULES`, `HOUSE_STYLE`) so the tool, the docs
+  and the site say the same thing. Keep `public/agents.md` in step when they
+  change.
 
 ## Trying it
 
-- **Chromium**: launch with `--enable-features=WebMCP`, open the site, and
-  the tools appear to the browser's agent surface.
-- **Any browser**: install the MCP-B extension, open the site, and the tools
-  show up in the extension's tool list; an MCP client connected through it
-  can call them.
+- **Chromium**: launch with `--enable-features=WebMCP`, open the site, and the
+  tools appear to the browser's agent surface.
+- **Any browser**: install the MCP-B extension; the tools show up in its tool
+  list, and an MCP client connected through it can call them.
 - **Console**: `await document.modelContext.getTools()` lists them. With the
   polyfill, `document.modelContext.executeTool(tool, JSON.stringify(args))`
-  runs one.
+  runs one:
 
-## Card parameters
-
-`get_flashcard_format` returns the same schema
-[`docs/deck-format.md`](deck-format.md) describes. The parameters, in the
-terms people use for flashcards:
-
-| Flashcard term | Field(s) | Notes |
-| --- | --- | --- |
-| Question | `prompt` (choice, order) or `statement` (truefalse) | One line, readable at a glance on timed levels. |
-| Answer type | `kind`: `choice`, `truefalse`, `order` | Drives the card's layout and keyboard handling. |
-| Correct answer | `options[0]`, `answer`, or `items` sorted by `value` | The site shuffles options and items itself. |
-| Answer revealed | `fact` | One line shown after answering, right or wrong. |
-| Picture | `image` (shown while answering) or `revealImage` (blurred until the answer), `imageAlt` | A path under `/public` or an `https://` URL. |
+```js
+const ctx = document.modelContext;
+const tools = await ctx.getTools();
+const call = (name, args) =>
+  ctx.executeTool(tools.find((t) => t.name === name), JSON.stringify(args)).then(JSON.parse);
+await call("start_flashcard_deck", { title: "Tides", headline: "Do you know the tides?", tagline: "Moon, sun, sea.", verdicts: { low: "Landlubber.", mid: "Deckhand.", high: "Navigator.", perfect: "Harbourmaster." }, levels: [{ id: "shore", name: "Shore", tagline: "The basics." }] });
+await call("add_flashcards", { slug: "tides", level: "shore", cards: [{ kind: "truefalse", statement: "The Moon causes the tides on its own.", answer: false, fact: "The Sun contributes about a third of the tidal force." }] });
+await call("publish_flashcard_deck", { slug: "tides" });
+```

@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { DECK } from "@/data";
-import { parseDeck, type Deck } from "@/lib/deck";
+import type { Deck } from "@/lib/deck";
 import { buildDeck, GenerationUnavailable, type DeckBuild } from "@/lib/create-deck";
-import { bestScoresFor, saveDeck, uniqueSlug, useSavedDecks } from "@/lib/deck-store";
+import { bestScoresFor, useSavedDecks } from "@/lib/deck-store";
 import { useWebMcpTools, type DeckSummary } from "@/lib/webmcp";
 import { REPO_URL } from "@/lib/site";
 import { spring } from "@/lib/springs";
@@ -112,7 +112,7 @@ export function HomeScreen() {
   // One build at a time; a second request while one runs is ignored (the
   // combobox is disabled meanwhile, and the tool says so).
   const buildRef = useRef<Promise<Deck> | null>(null);
-  const createDeck = useCallback(
+  const generateDeck = useCallback(
     (topic: string, notes?: string): Promise<Deck> => {
       if (buildRef.current) throw new Error("A deck is already being written. Wait for it to finish.");
       let playable: ((deck: Deck) => void) | null = null;
@@ -177,18 +177,23 @@ export function HomeScreen() {
     [decks]
   );
 
-  const importDeck = useCallback(
-    (raw: unknown): Deck => {
-      const parsed = parseDeck(raw);
-      const deck = { ...parsed, slug: uniqueSlug(parsed.slug, decks.map((d) => d.slug)) };
-      saveDeck(deck);
-      openDeck(deck);
-      return deck;
-    },
-    [decks, openDeck]
+  const findDeck = useCallback(
+    (slug: string) => decks.find((d) => d.slug === slug),
+    [decks]
   );
 
-  useWebMcpTools({ createDeck, playDeck, listDecks, importDeck });
+  // The store forgets the deck; the page just makes sure it isn't left open.
+  const deleteDeck = useCallback(
+    (slug: string) => {
+      if (activeDeck.slug === slug) {
+        setQuizOpen(false);
+        setActiveDeck(DECK);
+      }
+    },
+    [activeDeck.slug]
+  );
+
+  useWebMcpTools({ generateDeck, openDeck, playDeck, listDecks, findDeck, deleteDeck });
 
   const pendingLevels =
     build?.deck && build.deck.slug === activeDeck.slug ? build.pending : [];
@@ -217,7 +222,7 @@ export function HomeScreen() {
             disabled={building}
             onPlay={(slug) => playDeck(slug)}
             onCreate={(topic) => {
-              createDeck(topic).catch(() => {});
+              generateDeck(topic).catch(() => {});
             }}
           />
         </div>
@@ -293,6 +298,12 @@ export function HomeScreen() {
             Fork this on GitHub
           </a>
         )}
+        <span aria-hidden>·</span>
+        {/* Agents on this page get tools on document.modelContext; the
+            reference for them (and curious humans) is a plain markdown file. */}
+        <a href="/agents.md" className="transition-colors duration-80 hover:text-foreground">
+          For agents
+        </a>
       </footer>
 
       <div className="fixed bottom-6 right-6 z-20">

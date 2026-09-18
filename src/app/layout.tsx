@@ -21,6 +21,8 @@ export const metadata: Metadata = {
     title: `Flashcards — ${DECK.title}`,
     description: "Learning new things should be fun. Type a topic and play a quiz written for you.",
   },
+  // A discoverable pointer to the capabilities reference for agents.
+  alternates: { types: { "text/markdown": "/agents.md" } },
 };
 
 export default function RootLayout({

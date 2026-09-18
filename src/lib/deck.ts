@@ -191,6 +191,104 @@ export const LevelCardsSchema = z.object({
   questions: z.array(QuizQuestionSchema).min(1),
 });
 
+// ── Authoring in steps (WebMCP) ─────────────────────────────
+// An agent on the page writes a deck as a draft: metadata and level briefs
+// first, then cards in batches, then publish. Drafts relax two things —
+// levels may be empty and card ids are optional (assigned on add).
+
+const withOptionalId = <T extends z.ZodRawShape>(shape: z.ZodObject<T>) =>
+  shape.extend({ id: z.string().min(1).optional().describe("Optional; assigned if missing") });
+
+/** A card as an author may send it: same as a question, id optional. */
+export const CardInputSchema = z.discriminatedUnion("kind", [
+  withOptionalId(ChoiceQuestionSchema),
+  withOptionalId(TrueFalseQuestionSchema),
+  withOptionalId(OrderQuestionSchema),
+]);
+export type CardInput = z.infer<typeof CardInputSchema>;
+
+/** What starts a draft: the deck's metadata and its levels without cards. */
+export const DeckStartSchema = DeckBaseSchema.omit({ levels: true, slug: true }).extend({
+  slug: slug.optional().describe("Optional; derived from the title if missing"),
+  levels: z
+    .array(QuizLevelSchema.omit({ questions: true }))
+    .min(1)
+    .describe("In play order; each level unlocks the next"),
+});
+export type DeckStart = z.infer<typeof DeckStartSchema>;
+
+/** A draft: a deck whose levels may still be empty. */
+export const DraftSchema = DeckBaseSchema.extend({
+  levels: z
+    .array(QuizLevelSchema.extend({ questions: z.array(QuizQuestionSchema).default([]) }))
+    .min(1),
+});
+export type Draft = z.infer<typeof DraftSchema>;
+
+/** One card of each kind, for anyone learning the format. */
+export const EXAMPLE_CARDS: QuizQuestion[] = [
+  {
+    kind: "choice",
+    id: "example-1",
+    prompt: "Who painted the Mona Lisa?",
+    options: ["Leonardo da Vinci", "Michelangelo", "Sandro Botticelli", "Caravaggio"],
+    fact: "The Mona Lisa is a Renaissance work — a period defined by realism, proportion, and perspective.",
+  },
+  {
+    kind: "truefalse",
+    id: "example-2",
+    statement: "Realism aimed to idealize its subjects.",
+    answer: false,
+    fact: "Realism (1840 – 1880) portrayed the world as it is — everyday subjects, with idealism avoided.",
+  },
+  {
+    kind: "order",
+    id: "example-3",
+    prompt: "Tap these movements in order, earliest first.",
+    items: [
+      { label: "Renaissance", value: 1400 },
+      { label: "Baroque", value: 1600 },
+      { label: "Impressionism", value: 1860 },
+    ],
+    fact: "Renaissance (1400 – 1600), then Baroque (1600 – 1700), then Impressionism (1860 – 1880).",
+  },
+];
+
+/** The rules the site enforces, in one place for tools and docs. */
+export const AUTHORING_RULES = [
+  "options[0] is the correct answer; the site shuffles options, you must not.",
+  "options has 2 to 6 entries (4 is the sweet spot); order items has 3 to 5, listed lowest value first.",
+  "Every card has a fact: one line shown after answering, right or wrong, that adds something.",
+  "Question ids are unique across the deck (omit them when adding cards and they are assigned).",
+  "passScore can't exceed a level's card count; the reference deck uses 10 cards per level and passes at 7.",
+  "Images are optional: image shows sharp while answering, revealImage blurred until the answer. Only use URLs or paths that exist.",
+  "Level ids and the deck slug are lowercase letters, digits and dashes.",
+];
+
+/** House style, condensed from prompts/new-deck.md for agents on the page. */
+export const HOUSE_STYLE = [
+  "Levels ramp: famous basics → relationships and why → exact numbers and deep cuts (timed) → a hidden last level on a 10-second clock mixing every trick.",
+  "Ten cards per level, mixing kinds: about six choice, two truefalse, one or two order.",
+  "Distractors are plausible and from the same domain; no 'all of the above', no jokes as options.",
+  "About half the true/false statements are false, and a false one is a common misconception, not nonsense.",
+  "Tone: warm, precise, a little playful; second person; no exclamation marks in prompts. Verdicts are flavoured by the topic.",
+  "Facts must be true; prefer well-established facts over disputed trivia.",
+];
+
+/** A URL-safe slug from free text. */
+export function slugify(text: string): string {
+  return (
+    text
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 48)
+      .replace(/-+$/, "") || "deck"
+  );
+}
+
 export type Deck = z.infer<typeof DeckSchema>;
 export type LevelBrief = z.infer<typeof LevelBriefSchema>;
 export type DeckPlan = z.infer<typeof DeckPlanSchema>;
