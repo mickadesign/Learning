@@ -894,14 +894,14 @@ function DeckStack({ images }: { images: string[] }) {
   const reduceMotion = useReducedMotion() ?? false;
   if (!images.length) return null;
   return (
-    <span className="relative mb-8 flex h-14 items-center justify-center" aria-hidden>
+    <span className="relative mb-8 flex h-28 items-center justify-center" aria-hidden>
       {images.map((src, idx) => (
         <motion.span
           key={idx}
           className={cn(
             // Ring in the panel surface so the overlaps read as stacked prints.
-            "relative block h-12 w-16 overflow-hidden rounded-[8px] border border-border bg-surface-5 ring-2 ring-surface-4",
-            idx > 0 && "-ml-8",
+            "relative block h-24 w-32 overflow-hidden rounded-[12px] border border-border bg-surface-5 ring-2 ring-surface-4",
+            idx > 0 && "-ml-16",
             ["-rotate-6", "rotate-3", "-rotate-2"][idx]
           )}
           initial={
@@ -1193,11 +1193,11 @@ export function QuizModal({
           aria-label={deck.headline}
           style={{ borderRadius: 20 }}
           // Run/result views get one steady, taller footprint sized to fit an
-          // image card (image + two-line question + four answers + footer)
+          // image card (image + three-line question + four answers + footer)
           // without scrolling; level select stays content-sized.
           className={cn(
             "fixed inset-0 z-50 m-auto max-h-[92vh] w-[min(480px,92vw)] overflow-y-auto",
-            "h-[min(660px,92vh)]",
+            "h-[min(700px,92vh)]",
             surfaceClasses(4)
           )}
           initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
@@ -1261,12 +1261,7 @@ export function QuizModal({
                       CTA: the deck springs up as a fan of cards while a burst
                       of confetti settles around it. */}
                   <div className="relative flex flex-1 flex-col items-center justify-center">
-                    <Confetti
-                      className="-inset-x-6 -top-12 bottom-0"
-                      // Bursts from the fan, or from the check line when the
-                      // deck has no pictures to fan out.
-                      originY={thumbnails.length ? "calc(50% - 96px)" : "calc(50% - 56px)"}
-                    />
+                    <Confetti />
                     <DeckStack images={thumbnails} />
                     <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
                       <DrawnCheck size={16} />
@@ -1297,7 +1292,7 @@ export function QuizModal({
                       autoFocus
                     >
                       {bestLevelIndex < 0
-                        ? "Start the cards"
+                        ? "Start"
                         : startIndex > 0
                           ? "Keep going"
                           : "Play again"}
@@ -1431,7 +1426,7 @@ export function QuizModal({
                   {/* Score block centers in the space above the pinned CTAs.
                       A pass earns the same confetti as the unlock. */}
                   <div className="relative flex flex-1 flex-col items-center justify-center">
-                    {passed && <Confetti className="-inset-x-6" />}
+                    {passed && <Confetti />}
                     {passed && (
                       <h2 className="mb-8 font-heading text-[28px] leading-none text-foreground">
                         Congratulations!

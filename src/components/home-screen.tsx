@@ -11,18 +11,17 @@ import { REPO_URL } from "@/lib/site";
 import { spring } from "@/lib/springs";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ThinkingIndicator } from "@/components/ui/thinking-indicator";
 import { Confetti } from "@/components/quiz/confetti";
+import { WanderingCursor } from "@/components/wandering-cursor";
 import { AgentPromptButton } from "@/components/agent-prompt-button";
 import { QuizModal } from "@/components/quiz/quiz-modal";
-import { TopicCombobox } from "@/components/topic-combobox";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 /** Faint decorative gridlines under the fold. */
 function BackdropGrid() {
   const lines = Array.from({ length: 9 });
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 top-1/2 overflow-hidden">
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 top-1/4 overflow-hidden">
       {lines.map((_, i) => (
         <span
           key={i}
@@ -66,21 +65,6 @@ function statusLine(build: DeckBuild): string {
   }
 }
 
-/** What the status line says an agent is doing, by the tool it last called. */
-const AGENT_VERBS: Record<string, string> = {
-  get_flashcard_format: "reading the format",
-  find_flashcard_images: "finding pictures",
-  list_flashcard_decks: "looking at the decks",
-  get_flashcard_deck: "reading your deck",
-  start_flashcard_deck: "starting your deck",
-  add_flashcards: "writing cards",
-  publish_flashcard_deck: "publishing your deck",
-  import_flashcards: "importing a deck",
-  generate_flashcards: "asking the site to write a deck",
-  play_flashcards: "opening a deck",
-  delete_flashcard_deck: "removing a deck",
-};
-
 /** An agent that stops calling tools shouldn't leave a spinner behind. */
 const AGENT_QUIET_MS = 90_000;
 
@@ -95,8 +79,8 @@ export function HomeScreen() {
   const [activeDeck, setActiveDeck] = useState<Deck>(DECK);
   const [quizOpen, setQuizOpen] = useState(false);
   const [build, setBuild] = useState<DeckBuild | null>(null);
-  // null until /api/decks answers; the combobox waits for it to offer the
-  // create row.
+  // null until /api/decks answers: whether this server can write decks
+  // itself (the generate tool), which the status line's key follows.
   const [canCreate, setCanCreate] = useState<boolean | null>(null);
   const building = build?.status.phase === "planning" || build?.status.phase === "writing";
 
@@ -253,7 +237,7 @@ export function HomeScreen() {
         : "Creating your flashcards…"
       : agentState === "done" && activity.phase === "done"
         ? `Flashcards for ${activity.deck.title} are ready.`
-        : "What topic are you interested in learning?";
+        : "What do you want to know by heart?";
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-surface-1 px-6">
@@ -263,15 +247,24 @@ export function HomeScreen() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-[440px] py-24"
+        // 480px: wide enough for "Creating your flashcards…" on one line.
+        className="relative z-10 w-full max-w-[480px] py-24"
       >
-        {/* A published deck gets the quiz's confetti here too, bursting from
-            the headline that just changed. Keyed on the publish so a second
-            deck replays it. */}
-        {agentState === "done" && activity.phase === "done" && (
-          <Confetti key={activity.at} className="-inset-x-6 inset-y-0" originY="34%" />
+        {/* The great unlock: the moment an agent starts writing, the quiz's
+            confetti bursts from the headline. Keyed on the start of this
+            stretch of work, so it plays once per deck, not once per call;
+            a published deck gets a second burst. */}
+        {activity.phase === "working" && agentState === "working" && (
+          <Confetti key={activity.since} />
         )}
-        <p className="text-[15px] text-muted-foreground">Flashcards</p>
+        {agentState === "done" && activity.phase === "done" && (
+          <Confetti key={activity.at} />
+        )}
+        {/* The agent's hand: a big cursor drifting over the page while it
+            writes. */}
+        <AnimatePresence>
+          {agentState === "working" && <WanderingCursor key="cursor" />}
+        </AnimatePresence>
         <AnimatePresence mode="wait" initial={false}>
           <motion.h1
             key={headline}
@@ -279,27 +272,20 @@ export function HomeScreen() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, transition: { duration: spring.moderate.exit.duration } }}
             transition={{ duration: spring.slow.duration, ease: "easeOut" }}
-            className="mt-3 font-heading text-[52px] leading-none text-foreground"
+            className={cn(
+              "text-balance font-heading text-[52px] leading-none text-foreground",
+              // The one-line promise stays on one line.
+              headline === "Creating your flashcards…" && "whitespace-nowrap",
+              // While the agent writes, the headline itself is the loading
+              // signal: a muted band sweeps across it.
+              agentState === "working" && "shimmer-heading"
+            )}
           >
             {headline}
           </motion.h1>
         </AnimatePresence>
 
-        {/* The field sits flush with the text column: -mx offsets its own
-            horizontal padding so the placeholder aligns with the headline. */}
-        <div className="-mx-3 mt-8">
-          <TopicCombobox
-            decks={decks}
-            canCreate={canCreate === true}
-            disabled={building}
-            onPlay={(slug) => playDeck(slug)}
-            onCreate={(topic) => {
-              generateDeck(topic).catch(() => {});
-            }}
-          />
-        </div>
-
-        {/* Status under the field: what the generator is doing, or what this
+        {/* Status under the headline: what the generator is doing, or what this
             deployment can do. */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -314,7 +300,7 @@ export function HomeScreen() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, transition: { duration: spring.fast.exit.duration } }}
             transition={{ duration: spring.moderate.duration, ease: "easeOut" }}
-            className="mt-4 flex min-h-[28px] items-center gap-3 text-[14px] leading-snug text-muted-foreground"
+            className="mt-8 flex min-h-[28px] items-center gap-3 text-[14px] leading-snug text-muted-foreground"
           >
             {build ? (
               <>
@@ -334,17 +320,11 @@ export function HomeScreen() {
                 )}
               </>
             ) : agentState === "expected" ? (
-              <>
-                <ThinkingIndicator size="compact" className="-my-2 -ml-3" />
-                <span>Your agent is on this page. Waiting for its first move…</span>
-              </>
-            ) : agentState === "working" && activity.phase === "working" ? (
-              <>
-                <ThinkingIndicator size="compact" className="-my-2 -ml-3" />
-                <span>
-                  Your agent is {AGENT_VERBS[activity.tool] ?? "working on this page"}…
-                </span>
-              </>
+              <span>Your agent is on this page. Waiting for its first move</span>
+            ) : agentState === "working" ? (
+              // The headline's shimmer and the wandering cursor carry the
+              // state; the line stays empty (its height is reserved).
+              null
             ) : agentState === "quiet" ? (
               <span>Your agent has gone quiet. Nudge it, or pick a deck.</span>
             ) : agentState === "done" && activity.phase === "done" ? (
@@ -361,8 +341,8 @@ export function HomeScreen() {
                   </Button>
                 )}
               </>
-            ) : canCreate === false ? (
-              // No key on this server: hand the job to the visitor's own
+            ) : (
+              // The page is agent-first: hand the job to the visitor's own
               // agent. The prompt sends it here to use the WebMCP tools.
               <div className="flex flex-col items-start gap-3">
                 <AgentPromptButton />
@@ -371,11 +351,6 @@ export function HomeScreen() {
                   you want to learn, and writes your first ten cards.
                 </span>
               </div>
-            ) : (
-              <span>
-                Pick a deck, or type anything: four levels of ten cards, written
-                for you while you play the first.
-              </span>
             )}
           </motion.div>
         </AnimatePresence>

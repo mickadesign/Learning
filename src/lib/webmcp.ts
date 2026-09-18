@@ -190,8 +190,9 @@ interface ToolDef {
 
 export type AgentActivity =
   | { phase: "idle" }
-  /** `title` is the draft being written, once a call has named it. */
-  | { phase: "working"; tool: string; at: number; title?: string }
+  /** `since` is the first call of this stretch of work; `title` the draft
+   *  being written, once a call has named it. */
+  | { phase: "working"; tool: string; at: number; since: number; title?: string }
   | { phase: "done"; deck: Deck; at: number };
 
 const IDLE: AgentActivity = { phase: "idle" };
@@ -219,11 +220,14 @@ export function useAgentActivity(): AgentActivity {
  *  tool has named it; tools that hold the draft pass it in, so a reload
  *  between calls picks it up again. */
 function noteWorking(tool: string, title?: string) {
+  const now = Date.now();
+  const prev = activity.phase === "working" ? activity : null;
   setActivity({
     phase: "working",
     tool,
-    at: Date.now(),
-    title: title ?? (activity.phase === "working" ? activity.title : undefined),
+    at: now,
+    since: prev?.since ?? now,
+    title: title ?? prev?.title,
   });
 }
 

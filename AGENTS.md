@@ -45,10 +45,14 @@ site shuffles.
 - `src/components/agent-prompt-button.tsx` — the "Copy agent prompt" pill
   shown when the server has no key (copy + open in Claude / Codex / Cursor);
   the brief is `src/lib/agent-prompt.ts`, the marks `agent-marks.tsx`.
-- `src/components/home-screen.tsx` — the landing page: the topic combobox
-  (`topic-combobox.tsx`, Fluid Functionalism `base/combobox`, borderless),
-  generation status, and the modal. The modal takes the deck as a prop and
-  is keyed by slug.
+- `src/components/home-screen.tsx` — the landing page, agent-first: the
+  headline (balanced; shimmers while an agent writes), the "Copy agent
+  prompt" pill, a status line that follows the agent's tool calls
+  (`useAgentActivity` in `webmcp.ts`), full-page fireworks on start and
+  publish (`quiz/confetti.tsx`), and the modal. There is no deck picker:
+  decks are opened through the WebMCP tools (`play_flashcards`) or the Play
+  button once a deck is ready. The modal takes the deck as a prop and is
+  keyed by slug.
 - `src/app/s/[level]/[score]/` — prerendered share pages + OG cards.
 - `src/lib/`, `src/hooks/`, `src/components/ui/` — Fluid Functionalism
   components and systems (springs, surfaces, icon context, proximity hover).
