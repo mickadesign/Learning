@@ -13,12 +13,26 @@ or run the `/new-deck` skill in Claude Code, or `npm run generate -- "<topic>"`
 with an `ANTHROPIC_API_KEY`. `options[0]` is always the correct answer; the
 site shuffles.
 
+## Generation and tools
+
+- `src/lib/server/generate.ts` — two passes with Claude: `planDeck` (metadata
+  + level briefs) and `writeLevel` (ten cards). Used by the API routes under
+  `src/app/api/decks/` and by `scripts/generate-deck.mts`.
+- `src/lib/create-deck.ts` — the browser pipeline: plan, then levels one by
+  one, saving to `src/lib/deck-store.ts` (localStorage) after each.
+- `src/lib/webmcp.ts` — WebMCP tools on `document.modelContext`
+  (`list_flashcard_decks`, `create_flashcards`, `play_flashcards`,
+  `get_flashcard_format`, `import_flashcards`). See `docs/webmcp.md`.
+
 ## The engine
 
 - `src/components/quiz/quiz-modal.tsx` — the whole quiz: level list, three
   card kinds (choice, true/false, order), countdown ring, results, share. It
   is a faithful port of the Art Timeline quiz; keep its motion and copy.
-- `src/components/home-screen.tsx` — the landing page around the modal.
+- `src/components/home-screen.tsx` — the landing page: the topic combobox
+  (`topic-combobox.tsx`, Fluid Functionalism `base/combobox`, borderless),
+  generation status, and the modal. The modal takes the deck as a prop and
+  is keyed by slug.
 - `src/app/s/[level]/[score]/` — prerendered share pages + OG cards.
 - `src/lib/`, `src/hooks/`, `src/components/ui/` — Fluid Functionalism
   components and systems (springs, surfaces, icon context, proximity hover).

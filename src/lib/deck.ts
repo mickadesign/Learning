@@ -90,8 +90,9 @@ export const QuizLevelSchema = z.object({
   questions: z.array(QuizQuestionSchema).min(1),
 });
 
-export const DeckSchema = z
-  .object({
+/** The deck's shape without cross-field checks — what the generator plans
+ *  against and what the JSON schema for external authors is derived from. */
+export const DeckBaseSchema = z.object({
     /** Namespaces saved progress and share URLs. */
     slug,
     /** Site name: browser tab, share cards. */
@@ -119,8 +120,9 @@ export const DeckSchema = z
       perfect: z.string().min(1),
     }),
     levels: z.array(QuizLevelSchema).min(1),
-  })
-  .superRefine((deck, ctx) => {
+});
+
+export const DeckSchema = DeckBaseSchema.superRefine((deck, ctx) => {
     const levelIds = new Set<string>();
     const questionIds = new Set<string>();
     deck.levels.forEach((lv, li) => {
@@ -168,9 +170,30 @@ export const DeckSchema = z
         }
       });
     });
-  });
+});
+
+/** A level without its cards: what the planner returns and the writer fills.
+ *  `focus` is a one-line brief for the writer and never reaches the site. */
+export const LevelBriefSchema = QuizLevelSchema.omit({ questions: true }).extend({
+  focus: z
+    .string()
+    .min(1)
+    .describe("What this level tests and how hard it is, in one line"),
+});
+
+/** The generator's first pass: deck metadata plus level briefs, no cards. */
+export const DeckPlanSchema = DeckBaseSchema.omit({ levels: true }).extend({
+  levels: z.array(LevelBriefSchema).min(1),
+});
+
+/** The generator's second pass, once per level. */
+export const LevelCardsSchema = z.object({
+  questions: z.array(QuizQuestionSchema).min(1),
+});
 
 export type Deck = z.infer<typeof DeckSchema>;
+export type LevelBrief = z.infer<typeof LevelBriefSchema>;
+export type DeckPlan = z.infer<typeof DeckPlanSchema>;
 export type QuizLevel = Deck["levels"][number];
 export type QuizQuestion = QuizLevel["questions"][number];
 export type ChoiceQuestion = Extract<QuizQuestion, { kind: "choice" }>;
@@ -219,4 +242,34 @@ export function shareTextFor(
   if (score >= deck.passScore)
     return `I scored ${score}/${total} on the ${level.name} level of the ${quiz} — can you beat me?`;
   return `I scored ${score}/${total} on the ${level.name} level of the ${quiz}. Harder than it looks.`;
+}
+
+/** JSON Schema (draft 2020-12) for a deck — the flashcard parameters as an
+ *  external author or agent sees them. Refinements (unique ids, distinct
+ *  options) aren't expressible here; parseDeck enforces them. */
+export function deckJsonSchema(): Record<string, unknown> {
+  const { $schema: _omit, ...schema } = z.toJSONSchema(DeckBaseSchema, {
+    unrepresentable: "any",
+  });
+  void _omit;
+  return schema;
+}
+
+/** Turn a plan plus written levels back into a valid deck. Levels keep the
+ *  plan's order; a level without cards yet is left out, so a deck is
+ *  playable as soon as its first level exists. */
+export function assembleDeck(
+  plan: DeckPlan,
+  cards: Record<string, QuizQuestion[]>,
+  slug: string = plan.slug
+): Deck {
+  const { levels: briefs, ...meta } = plan;
+  const levels = briefs
+    .filter((b) => cards[b.id]?.length)
+    .map((b) => {
+      const { focus: _focus, ...level } = b;
+      void _focus;
+      return { ...level, questions: cards[b.id] };
+    });
+  return parseDeck({ ...meta, slug, levels });
 }

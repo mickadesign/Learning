@@ -12,11 +12,12 @@ import {
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { BorderBeam } from "border-beam";
-import { DECK } from "@/data";
 import {
   shareTextFor,
   verdictFor,
   type ChoiceQuestion,
+  type Deck,
+  type LevelBrief,
   type OrderItem,
   type OrderQuestion,
   type QuizQuestion,
@@ -30,23 +31,16 @@ import { spring } from "@/lib/springs";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { cn } from "@/lib/utils";
 
-// The deck drives everything below: levels, pass mark, countdown length.
-const QUIZ_LEVELS = DECK.levels;
-const PASS_SCORE = DECK.passScore;
-const TIMER_SECONDS = DECK.timerSeconds;
-
 // ── Progress persistence ────────────────────────────────────
 // Same pattern as the theme preference: a small localStorage blob, guarded so
 // private-mode/blocked storage degrades to session-only progress. Keyed by the
-// deck slug so two decks on one origin don't share scores.
-
-const STORAGE_KEY = `${DECK.slug}-quiz-v1`;
+// deck slug (`<slug>-quiz-v1`) so two decks on one origin don't share scores.
 
 type BestScores = Partial<Record<string, number>>;
 
-function loadBest(): BestScores {
+function loadBest(key: string): BestScores {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return {};
     const parsed = JSON.parse(raw) as { best?: BestScores };
     return parsed.best ?? {};
@@ -55,9 +49,9 @@ function loadBest(): BestScores {
   }
 }
 
-function saveBest(best: BestScores) {
+function saveBest(key: string, best: BestScores) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ best }));
+    localStorage.setItem(key, JSON.stringify({ best }));
   } catch {}
 }
 
@@ -852,9 +846,29 @@ type View = "levels" | "run" | "result";
 interface QuizModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The deck to play. Remount (key by slug) when it changes. */
+  deck: Deck;
+  /** Levels still being written — shown as placeholders after the real
+   *  ones. Hidden briefs stay hidden. */
+  pendingLevels?: LevelBrief[];
+  /** Link shared scores to the prerendered /s/[level]/[score] pages. Only
+   *  the built-in deck has them; other decks share the site root. */
+  shareLinks?: boolean;
 }
 
-export function QuizModal({ open, onOpenChange }: QuizModalProps) {
+export function QuizModal({
+  open,
+  onOpenChange,
+  deck,
+  pendingLevels = [],
+  shareLinks = false,
+}: QuizModalProps) {
+  // The deck drives everything below: levels, pass mark, countdown length.
+  const QUIZ_LEVELS = deck.levels;
+  const PASS_SCORE = deck.passScore;
+  const TIMER_SECONDS = deck.timerSeconds;
+  const STORAGE_KEY = `${deck.slug}-quiz-v1`;
+
   const XIcon = useIcon("x");
   const LockIcon = useIcon("lock");
   const CheckIcon = useIcon("check");
@@ -894,8 +908,8 @@ export function QuizModal({ open, onOpenChange }: QuizModalProps) {
     setView("levels");
     setRun(null);
     setConfirmExit(false);
-    setBest(loadBest());
-  }, [open]);
+    setBest(loadBest(STORAGE_KEY));
+  }, [open, STORAGE_KEY]);
 
   const unlocked = (i: number) =>
     i === 0 || (best[QUIZ_LEVELS[i - 1].id] ?? 0) >= PASS_SCORE;
@@ -958,7 +972,7 @@ export function QuizModal({ open, onOpenChange }: QuizModalProps) {
     const nextBest = isNewBest ? { ...best, [level.id]: score } : best;
     if (isNewBest) {
       setBest(nextBest);
-      saveBest(nextBest);
+      saveBest(STORAGE_KEY, nextBest);
     }
     setView("result");
   };
@@ -1035,8 +1049,10 @@ export function QuizModal({ open, onOpenChange }: QuizModalProps) {
   // if nothing takes over the page (app not installed).
   const shareScore = () => {
     const lv = QUIZ_LEVELS[bestLevelIndex];
-    const text = shareTextFor(DECK, lv, best[lv.id]!);
-    const pageUrl = `${window.location.origin}/s/${lv.id}/${best[lv.id]}`;
+    const text = shareTextFor(deck, lv, best[lv.id]!);
+    const pageUrl = shareLinks
+      ? `${window.location.origin}/s/${lv.id}/${best[lv.id]}`
+      : `${window.location.origin}/`;
     const webIntent = new URL("https://x.com/intent/post");
     webIntent.searchParams.set("text", text);
     webIntent.searchParams.set("url", pageUrl);
@@ -1091,7 +1107,7 @@ export function QuizModal({ open, onOpenChange }: QuizModalProps) {
           key="quiz-panel"
           role="dialog"
           aria-modal="true"
-          aria-label={DECK.headline}
+          aria-label={deck.headline}
           style={{ borderRadius: 20 }}
           // Run/result views get one steady, taller footprint sized to fit an
           // image card (image + two-line question + four answers + footer)
@@ -1124,7 +1140,7 @@ export function QuizModal({ open, onOpenChange }: QuizModalProps) {
                     own centered title lives with the score. */}
                 {view === "levels" ? (
                   <h1 className="font-heading text-[28px] leading-none text-foreground">
-                    {DECK.headline}
+                    {deck.headline}
                   </h1>
                 ) : (
                   <span />
@@ -1281,6 +1297,31 @@ export function QuizModal({ open, onOpenChange }: QuizModalProps) {
                     );
                   })}
 
+                  {/* Levels the generator hasn't written yet: a dashed
+                      placeholder per brief, so the list shows what's coming
+                      while the first level is already playable. */}
+                  {pendingLevels
+                    .filter((brief) => !brief.hidden)
+                    .map((brief) => (
+                      <div
+                        key={brief.id}
+                        aria-busy
+                        className="relative block w-full rounded-[14px] border border-dashed border-border bg-surface-5 p-3.5 text-left opacity-70"
+                      >
+                        <span className="flex items-baseline justify-between gap-4">
+                          <span className="font-heading text-[21px] leading-none text-foreground">
+                            {brief.name} level
+                          </span>
+                          <span className="shrink-0 text-[12px] text-muted-foreground motion-safe:animate-pulse">
+                            Writing…
+                          </span>
+                        </span>
+                        <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">
+                          {brief.tagline}
+                        </span>
+                      </div>
+                    ))}
+
                   {/* Share + credit ride the bottom of the fixed-height
                       modal; the share button waits for a first score. */}
                   {bestLevelIndex >= 0 && (
@@ -1296,7 +1337,7 @@ export function QuizModal({ open, onOpenChange }: QuizModalProps) {
                       </Button>
                     </div>
                   )}
-                  {DECK.author && (
+                  {deck.author && (
                     <p
                       className={cn(
                         "pt-2 text-center text-[13px] text-muted-foreground",
@@ -1304,17 +1345,17 @@ export function QuizModal({ open, onOpenChange }: QuizModalProps) {
                       )}
                     >
                       Created by{" "}
-                      {DECK.author.url ? (
+                      {deck.author.url ? (
                         <a
-                          href={DECK.author.url}
+                          href={deck.author.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="transition-colors duration-80 hover:text-foreground"
                         >
-                          {DECK.author.name}
+                          {deck.author.name}
                         </a>
                       ) : (
-                        DECK.author.name
+                        deck.author.name
                       )}
                     </p>
                   )}
@@ -1429,7 +1470,7 @@ export function QuizModal({ open, onOpenChange }: QuizModalProps) {
                       </span>
                     </p>
                     <p className="mt-3 max-w-[30ch] text-[14px] leading-relaxed text-muted-foreground">
-                      {verdictFor(DECK, score, run?.length ?? 0)}
+                      {verdictFor(deck, score, run?.length ?? 0)}
                     </p>
                   </div>
                   <div className="w-full space-y-2">

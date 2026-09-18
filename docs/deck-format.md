@@ -32,6 +32,22 @@ brief agents follow when writing one is [`prompts/new-deck.md`](../prompts/new-d
 | `hidden` | boolean | Optional. Only appears once the previous level is passed, with the golden beam. |
 | `questions` | Question[] | The reference deck uses 10; the results screen shows `score/<count>`. |
 
+## Card parameters
+
+Each card is a question, an answer type, the correct answer, the line revealed
+after answering, and an optional picture:
+
+| Parameter | Field(s) | Notes |
+| --- | --- | --- |
+| Question | `prompt` (choice, order) or `statement` (truefalse) | One line. |
+| Answer type | `kind`: `choice`, `truefalse`, `order` | Drives the card's layout and keys. |
+| Correct answer | `options[0]`, `answer`, or `items` sorted by `value` | The site does the shuffling. |
+| Answer revealed | `fact` | Shown after answering, right or wrong. |
+| Picture | `image` or `revealImage`, plus `imageAlt` | Sharp while answering, or blurred until the reveal. |
+
+The same parameters are exposed to browser agents as a JSON Schema by the
+`get_flashcard_format` WebMCP tool (see [`webmcp.md`](webmcp.md)).
+
 ## Questions
 
 All kinds share `id` (unique across the deck) and `fact` (one line shown on the

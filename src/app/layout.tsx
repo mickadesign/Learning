@@ -15,11 +15,11 @@ export const metadata: Metadata = {
         ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
         : "http://localhost:3000")
   ),
-  title: DECK.title,
-  description: DECK.tagline,
+  title: `Flashcards — ${DECK.title}`,
+  description: "Learning new things should be fun. Type a topic and play a quiz written for you.",
   openGraph: {
-    title: DECK.title,
-    description: DECK.tagline,
+    title: `Flashcards — ${DECK.title}`,
+    description: "Learning new things should be fun. Type a topic and play a quiz written for you.",
   },
 };
 

@@ -1,29 +1,19 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { BorderBeam } from "border-beam";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { DECK } from "@/data";
+import { parseDeck, type Deck } from "@/lib/deck";
+import { buildDeck, GenerationUnavailable, type DeckBuild } from "@/lib/create-deck";
+import { bestScoresFor, saveDeck, uniqueSlug, useSavedDecks } from "@/lib/deck-store";
+import { useWebMcpTools, type DeckSummary } from "@/lib/webmcp";
 import { REPO_URL } from "@/lib/site";
+import { spring } from "@/lib/springs";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { QuizModal } from "@/components/quiz/quiz-modal";
+import { TopicCombobox } from "@/components/topic-combobox";
 import { ThemeToggle } from "@/components/theme-toggle";
-
-// A taste of the deck: up to four illustrated cards that spring out from
-// behind the button on hover. Positions are relative to the button row; the
-// hidden state tucks each one back toward the button's centre so they read
-// as emerging from behind it. Rotations stay in the 2-5deg range.
-const PEEK_SLOTS = [
-  { className: "-left-28 -top-14 w-36", rotate: -4, hidden: { x: 120, y: 50 } },
-  { className: "-left-10 top-5 w-36", rotate: 3, hidden: { x: 90, y: -30 } },
-  { className: "-right-28 -top-16 w-36", rotate: 4, hidden: { x: -130, y: 60 } },
-  { className: "-right-16 top-3 w-36", rotate: -3, hidden: { x: -90, y: -20 } },
-];
-
-const PEEK_IMAGES = DECK.levels
-  .flatMap((lv) => lv.questions)
-  .flatMap((q) => (q.kind === "choice" && q.image ? [q.image] : []))
-  .slice(0, PEEK_SLOTS.length);
 
 /** Faint decorative gridlines under the fold. */
 function BackdropGrid() {
@@ -41,24 +31,167 @@ function BackdropGrid() {
   );
 }
 
-function levelSummary() {
-  const visible = DECK.levels.filter((lv) => !lv.hidden);
-  const counts = new Set(visible.map((lv) => lv.questions.length));
-  const levels = `${visible.length} ${visible.length === 1 ? "level" : "levels"}`;
-  if (counts.size === 1) {
-    const n = visible[0].questions.length;
-    return `${levels} · ${n} ${n === 1 ? "card" : "cards"} each`;
-  }
-  return levels;
+/** The Button's loading glyph, on its own, for the status line. */
+function Spinner() {
+  return (
+    <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M 12 12 C 14 8.5 19 8.5 19 12 C 19 15.5 14 15.5 12 12 C 10 8.5 5 8.5 5 12 C 5 15.5 10 15.5 12 12 Z"
+        stroke="currentColor"
+        strokeWidth="1.125"
+        strokeLinecap="round"
+        pathLength="100"
+        style={{
+          strokeDasharray: "15 85",
+          animation: "spinner-move 2s linear infinite, spinner-dash 4s ease-in-out infinite",
+        }}
+      />
+    </svg>
+  );
 }
 
-/** The landing: the deck's headline and intro, then the button that opens
- *  the quiz. Everything on screen comes from src/data/deck.json. */
+function statusLine(build: DeckBuild): string {
+  switch (build.status.phase) {
+    case "planning":
+      return `Planning a deck about “${build.topic}”…`;
+    case "writing":
+      return `Writing the ${build.status.level.name} level (${build.status.index} of ${build.status.total})…`;
+    case "ready":
+      return `“${build.deck?.title}” is ready — all ${build.deck?.levels.length} levels.`;
+    case "error":
+      return build.status.message;
+  }
+}
+
+/** The landing: one question, a combobox to answer it, and the quiz. Every
+ *  deck — the built-in one and the ones written here — plays in the same
+ *  modal. */
 export function HomeScreen() {
+  const saved = useSavedDecks();
+  // Newest first, so a deck just written sits at the top of the list.
+  const decks = useMemo(() => [DECK, ...[...saved].reverse()], [saved]);
+
+  const [activeDeck, setActiveDeck] = useState<Deck>(DECK);
   const [quizOpen, setQuizOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  const reduceMotion = useReducedMotion();
-  const showPeek = hovered && !reduceMotion;
+  const [build, setBuild] = useState<DeckBuild | null>(null);
+  // null until /api/decks answers; the combobox waits for it to offer the
+  // create row.
+  const [canCreate, setCanCreate] = useState<boolean | null>(null);
+  const building = build?.status.phase === "planning" || build?.status.phase === "writing";
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/decks")
+      .then((r) => r.json())
+      .then((d: { available: boolean }) => {
+        if (!cancelled) setCanCreate(!!d.available);
+      })
+      .catch(() => {
+        if (!cancelled) setCanCreate(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const openDeck = useCallback((deck: Deck) => {
+    setActiveDeck(deck);
+    setQuizOpen(true);
+  }, []);
+
+  const playDeck = useCallback(
+    (slug?: string): Deck => {
+      const deck = slug ? decks.find((d) => d.slug === slug) : DECK;
+      if (!deck) throw new Error(`No deck "${slug}". Try list_flashcard_decks.`);
+      openDeck(deck);
+      return deck;
+    },
+    [decks, openDeck]
+  );
+
+  // One build at a time; a second request while one runs is ignored (the
+  // combobox is disabled meanwhile, and the tool says so).
+  const buildRef = useRef<Promise<Deck> | null>(null);
+  const createDeck = useCallback(
+    (topic: string, notes?: string): Promise<Deck> => {
+      if (buildRef.current) throw new Error("A deck is already being written. Wait for it to finish.");
+      let playable: ((deck: Deck) => void) | null = null;
+      let failed: ((error: unknown) => void) | null = null;
+      const firstLevel = new Promise<Deck>((resolve, reject) => {
+        playable = resolve;
+        failed = reject;
+      });
+      const run = buildDeck(topic, {
+        notes,
+        takenSlugs: decks.map((d) => d.slug),
+        onUpdate: (b) => {
+          setBuild(b);
+          // The open modal follows the deck as levels arrive.
+          if (b.deck) setActiveDeck((cur) => (cur.slug === b.deck!.slug ? b.deck! : cur));
+        },
+        onPlayable: (deck) => {
+          openDeck(deck);
+          playable?.(deck);
+        },
+      });
+      buildRef.current = run;
+      run
+        .catch((error: unknown) => {
+          const message =
+            error instanceof GenerationUnavailable
+              ? "Deck generation isn't set up on this deployment."
+              : error instanceof Error
+                ? error.message
+                : String(error);
+          setBuild({ topic, deck: null, pending: [], status: { phase: "error", message } });
+          if (error instanceof GenerationUnavailable) setCanCreate(false);
+          failed?.(new Error(message));
+        })
+        .finally(() => {
+          buildRef.current = null;
+        });
+      return firstLevel;
+    },
+    [decks, openDeck]
+  );
+
+  const listDecks = useCallback(
+    (): DeckSummary[] =>
+      decks.map((d) => {
+        const best = bestScoresFor(d.slug);
+        return {
+          slug: d.slug,
+          title: d.title,
+          headline: d.headline,
+          builtIn: d.slug === DECK.slug,
+          levels: d.levels.map((l) => ({
+            id: l.id,
+            name: l.name,
+            cards: l.questions.length,
+            timed: l.timed,
+            hidden: l.hidden,
+            ...(best[l.id] !== undefined ? { best: best[l.id] } : {}),
+          })),
+        };
+      }),
+    [decks]
+  );
+
+  const importDeck = useCallback(
+    (raw: unknown): Deck => {
+      const parsed = parseDeck(raw);
+      const deck = { ...parsed, slug: uniqueSlug(parsed.slug, decks.map((d) => d.slug)) };
+      saveDeck(deck);
+      openDeck(deck);
+      return deck;
+    },
+    [decks, openDeck]
+  );
+
+  useWebMcpTools({ createDeck, playDeck, listDecks, importDeck });
+
+  const pendingLevels =
+    build?.deck && build.deck.slug === activeDeck.slug ? build.pending : [];
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-surface-1 px-6">
@@ -70,98 +203,66 @@ export function HomeScreen() {
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 w-full max-w-[440px] py-24"
       >
-        <p className="text-[15px] text-muted-foreground">{DECK.title}</p>
+        <p className="text-[15px] text-muted-foreground">Flashcards</p>
         <h1 className="mt-3 font-heading text-[52px] leading-none text-foreground">
-          {DECK.headline}
+          What topic are you interested in learning?
         </h1>
 
-        {DECK.intro.length > 0 && (
-          <div className="mt-8 space-y-5 text-[16px] leading-snug text-muted-foreground">
-            {DECK.intro.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
-          </div>
-        )}
+        {/* The field sits flush with the text column: -mx offsets its own
+            horizontal padding so the placeholder aligns with the headline. */}
+        <div className="-mx-3 mt-8">
+          <TopicCombobox
+            decks={decks}
+            canCreate={canCreate === true}
+            disabled={building}
+            onPlay={(slug) => playDeck(slug)}
+            onCreate={(topic) => {
+              createDeck(topic).catch(() => {});
+            }}
+          />
+        </div>
 
-        <motion.div
-          className="relative mt-10"
-          onHoverStart={() => setHovered(true)}
-          onHoverEnd={() => setHovered(false)}
-        >
-          {PEEK_IMAGES.map((src, i) => {
-            const slot = PEEK_SLOTS[i];
-            return (
-              <motion.img
-                key={src}
-                src={src}
-                alt=""
-                aria-hidden
-                draggable={false}
-                className={`pointer-events-none absolute aspect-[3/2] rounded-2xl object-cover shadow-lg ${slot.className}`}
-                initial={false}
-                animate={
-                  showPeek
-                    ? {
-                        opacity: 1,
-                        scale: 1,
-                        x: 0,
-                        y: 0,
-                        rotate: slot.rotate,
-                        transition: {
-                          type: "spring",
-                          duration: 0.35,
-                          bounce: 0.2,
-                          delay: i * 0.04,
-                        },
-                      }
-                    : {
-                        opacity: 0,
-                        scale: 0.35,
-                        x: slot.hidden.x,
-                        y: slot.hidden.y,
-                        rotate: slot.rotate,
-                        transition: { type: "spring", duration: 0.2, bounce: 0 },
-                      }
-                }
-              />
-            );
-          })}
-
-          {/* The golden beam from the level cards, radius matched to the
-              pill (h-11). The beam sets its own inline position, so a plain
-              div carries the layout. */}
-          <div className="relative z-10">
-            <BorderBeam
-              colorVariant="sunset"
-              duration={3.12}
-              brightness={1.4}
-              hueRange={24}
-              borderRadius={22}
-              style={
-                {
-                  "--beam-hue-base": "40deg",
-                  "--beam-inner-opacity": "0.15",
-                } as CSSProperties
-              }
-            >
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={() => setQuizOpen(true)}
-                // Solid bg on the root keeps the pill fully opaque even while
-                // the inner hover layer drops to bg-foreground/90 — no images
-                // bleeding through.
-                className="h-11 w-full rounded-full bg-foreground text-[15px]"
-              >
-                {DECK.cta}
-              </Button>
-            </BorderBeam>
-          </div>
-        </motion.div>
-
-        <p className="mt-4 text-center text-[13px] text-muted-foreground">
-          {levelSummary()}
-        </p>
+        {/* Status under the field: what the generator is doing, or what this
+            deployment can do. */}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={build ? `${build.status.phase}-${build.status.phase === "writing" ? build.status.index : ""}` : `idle-${canCreate}`}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, transition: { duration: spring.fast.exit.duration } }}
+            transition={{ duration: spring.moderate.duration, ease: "easeOut" }}
+            className="mt-4 flex min-h-[28px] items-center gap-3 text-[14px] leading-snug text-muted-foreground"
+          >
+            {build ? (
+              <>
+                {building && <Spinner />}
+                <span className={cn(build.status.phase === "error" && "text-destructive")}>
+                  {statusLine(build)}
+                </span>
+                {build.deck && !quizOpen && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="ml-auto shrink-0 rounded-full"
+                    onClick={() => openDeck(build.deck!)}
+                  >
+                    Play
+                  </Button>
+                )}
+              </>
+            ) : canCreate === false ? (
+              <span>
+                Pick a deck to play. Writing new ones needs an{" "}
+                <code className="text-[13px]">ANTHROPIC_API_KEY</code> on the server.
+              </span>
+            ) : (
+              <span>
+                Pick a deck, or type anything: four levels of ten cards, written
+                for you while you play the first.
+              </span>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </motion.main>
 
       <footer className="absolute bottom-6 left-6 z-10 flex items-center gap-1.5 text-[13px] text-muted-foreground">
@@ -189,7 +290,7 @@ export function HomeScreen() {
             rel="noopener noreferrer"
             className="transition-colors duration-80 hover:text-foreground"
           >
-            Fork this quiz on GitHub
+            Fork this on GitHub
           </a>
         )}
       </footer>
@@ -198,7 +299,14 @@ export function HomeScreen() {
         <ThemeToggle />
       </div>
 
-      <QuizModal open={quizOpen} onOpenChange={setQuizOpen} />
+      <QuizModal
+        key={activeDeck.slug}
+        open={quizOpen}
+        onOpenChange={setQuizOpen}
+        deck={activeDeck}
+        pendingLevels={pendingLevels}
+        shareLinks={activeDeck.slug === DECK.slug}
+      />
     </div>
   );
 }

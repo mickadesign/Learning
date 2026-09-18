@@ -17,8 +17,14 @@
   `--hover`/`--active` tokens in src/app/globals.css
 - `MotionConfig reducedMotion="user"` in layout.tsx
 - Inter Variable self-hosted with the `opsz` axis (src/app/fonts.ts)
-- installed @fluid items: button, switch (base), springs, font-weight,
-  icon-context, surface-context/surface-classes, use-touch-primary
+- installed @fluid items: button, switch (base), combobox (base, with
+  scroll-area, fluid-hover-highlight, use-fluid-hover, use-merge-split,
+  use-keyboard-nav-gate, elevated, popup, size-context), springs,
+  font-weight, icon-context, surface-context/surface-classes,
+  use-touch-primary
+- icon-context + shape-context are the Art Timeline versions (icon-map with
+  five libraries, pill default); the combobox install's newer copies were
+  reverted, keeping only the `variant` field and `--shape-input-radius`
 - local `use-proximity-hover` hook is an older copy of the fluid-hover system
   (kept as-is: the quiz's answer-row glide is tuned against it)
 

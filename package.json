@@ -15,9 +15,12 @@
     "generate": "node scripts/generate-deck.mts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.126.0",
     "@base-ui/react": "^1.6.0",
     "@hugeicons/core-free-icons": "^4.2.2",
     "@hugeicons/react": "^1.1.9",
+    "@mcp-b/global": "^5.1.0",
+    "@mcp-b/webmcp-types": "^5.1.0",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-dialog": "^1.1.18",
     "@radix-ui/react-scroll-area": "^1.2.13",
@@ -41,7 +44,6 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
