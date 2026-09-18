@@ -79,6 +79,9 @@ interface Agent {
    *  Codex has no prefill, so the copy the click just made is the way in. */
   href: (prompt: string) => string;
   prefills: boolean;
+  /** For app schemes: where to go when nothing on this machine handles
+   *  the scheme (the app isn't installed). */
+  fallback?: string;
 }
 
 const AGENTS: Agent[] = [
@@ -89,18 +92,39 @@ const AGENTS: Agent[] = [
     prefills: true,
   },
   {
+    // The Codex desktop app registers the `codex` scheme; threads/new is
+    // the entry point its own sign-in page redirects to. The prompt rides
+    // the clipboard. Without the app, the web page offers the download.
     name: "Codex",
     Mark: CodexMark,
-    href: () => "https://chatgpt.com/codex",
+    href: () => "codex://threads/new",
     prefills: false,
+    fallback: "https://chatgpt.com/codex",
   },
   {
     name: "Cursor",
     Mark: CursorMark,
     href: (p) => `cursor://anysphere.cursor-deeplink/prompt?text=${encodeURIComponent(p)}`,
     prefills: true,
+    fallback: "https://cursor.com/",
   },
 ];
+
+/** An app scheme that nothing handles fails silently. Same trick as the
+ *  quiz's share button: if the page is still visible a beat later, the app
+ *  didn't take over — go to the web fallback instead. Cancelled the moment
+ *  the page hides, so it can't fire behind the app. */
+function openWithFallback(href: string, fallback: string) {
+  const timer = window.setTimeout(() => {
+    if (document.visibilityState === "visible") window.location.href = fallback;
+  }, 1500);
+  const cancel = () => window.clearTimeout(timer);
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") cancel();
+  }, { once: true });
+  window.addEventListener("pagehide", cancel, { once: true });
+  window.location.href = href;
+}
 
 async function writeClipboard(text: string): Promise<boolean> {
   try {
@@ -178,7 +202,7 @@ export function AgentPromptButton({ className }: { className?: string }) {
           {copied && <span className="sr-only">Copied</span>}
         </Button>
         <span aria-hidden className="mx-1 h-5 w-px bg-border" />
-        {AGENTS.map(({ name, Mark, href, prefills }) => {
+        {AGENTS.map(({ name, Mark, href, prefills, fallback }) => {
           const url = prompt ? href(prompt) : undefined;
           const external = url?.startsWith("http");
           return (
@@ -188,14 +212,20 @@ export function AgentPromptButton({ className }: { className?: string }) {
               variant="ghost"
               size="icon"
               className="rounded-full"
-              onClick={() => void copy()}
+              onClick={(event) => {
+                void copy();
+                if (url && fallback && !external) {
+                  event.preventDefault();
+                  openWithFallback(url, fallback);
+                }
+              }}
             >
               <a
                 href={url}
                 target={external ? "_blank" : undefined}
                 rel={external ? "noopener noreferrer" : undefined}
                 aria-label={prefills ? `Open in ${name}` : `Copy and open ${name}`}
-                title={prefills ? `Open in ${name}` : `Copy, then open ${name}`}
+                title={prefills ? `Open in ${name}` : `Copy, then open a new ${name} thread`}
               >
                 <Mark size={18} />
               </a>
