@@ -10,11 +10,11 @@ brief agents follow when writing one is [`prompts/new-deck.md`](../prompts/new-d
 | --- | --- | --- |
 | `slug` | string | Lowercase and dashes. Namespaces saved scores and the theme preference, and appears in share URLs. |
 | `title` | string | Site name: browser tab, share cards, share text. |
-| `headline` | string | The big question on the landing page and the level list, e.g. "Are you an Art connoisseur?" |
+| `headline` | string | The big question on the landing page and the deck intro, e.g. "Are you an Art connoisseur?" |
 | `tagline` | string | One line for metadata and share cards. |
 | `intro` | string[] | Optional. Short paragraphs on the landing page. |
 | `cta` | string | Optional. Button label, default "Test knowledge". |
-| `author` | `{ name, url? }` | Optional. Credit line on the landing page and level list. |
+| `author` | `{ name, url? }` | Optional. Credit line on the landing page and the deck intro. |
 | `passScore` | number | Optional, default 7. Score needed on a level to unlock the next. |
 | `timerSeconds` | number | Optional, default 20. Countdown per card on timed levels. |
 | `verdicts` | `{ low, mid, high, perfect }` | Results-screen line by score band: ≤ 30 %, ≤ 60 %, < 100 %, 100 %. |

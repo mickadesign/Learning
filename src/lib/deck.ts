@@ -111,7 +111,7 @@ export const DeckBaseSchema = z.object({
     slug,
     /** Site name: browser tab, share cards. */
     title: z.string().min(1),
-    /** The big question on the landing page and level list. */
+    /** The big question on the landing page and the deck intro. */
     headline: z.string().min(1),
     /** One line under the title (metadata, share cards). */
     tagline: z.string().min(1),

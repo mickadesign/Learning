@@ -1,12 +1,12 @@
 /** The brief handed to an AI agent by the "Copy agent prompt" button: open
- *  this site, ask the visitor what they want to learn, write ten cards
- *  through the WebMCP tools, then iterate. Self-contained, so it works in
- *  any agent that can browse and call page tools. */
+ *  this site, suggest topics from what it knows about the visitor, write
+ *  ten cards through the WebMCP tools, then iterate. Short on purpose — it
+ *  also rides in deep-link URLs — and self-contained, so it works in any
+ *  agent that can browse and call page tools. */
 export function agentPrompt(origin: string): string {
-  return `Open ${origin}/ in your browser and keep the page open. The moment it loads it registers WebMCP tools on document.modelContext (the reference is ${origin}/agents.md); use those tools rather than clicking through the page. If your browser tool can only run scripts on the page, call them with \`await window.flashcards.call("<tool name>", { ...args })\` — it returns a plain object. If you have no way to open a web page at all, say so and stop.
+  return `Open ${origin}/ and keep it open. The page gives you WebMCP tools on document.modelContext (reference: ${origin}/agents.md). If you can only run page scripts, use \`await window.flashcards.call("<tool>", { ...args })\`. Use the tools, not the UI.
 
-Then:
-1. Ask me one question — what would I like to learn? — and wait for my answer.
-2. Call get_flashcard_format once. Then write a first set of 10 cards about my topic: start_flashcard_deck (a title, a headline phrased as a question, a tagline, four verdicts, and a single level), add_flashcards with the 10 cards (about six choice with options[0] correct, two truefalse, one or two order, every card with a one-line fact that teaches something), then publish_flashcard_deck so the quiz opens for me.
-3. Tell me it's ready in one line and let me play. Then iterate: ask what I'd like changed — harder, easier, a different angle, another level — and use get_flashcard_deck, add_flashcards or a new start_flashcard_deck, and publish_flashcard_deck again. Keep every fact true; if you're unsure of one, pick a different card.`;
+1. Suggest three topics from what you know about me — things I care about but haven't gone deep on, one line each, no private details — or let me name my own. Wait for my pick.
+2. Read get_flashcard_format, then start_flashcard_deck and add ten cards: mostly choice, a couple of true/false, one order, a one-line fact on each, find_flashcard_images for anything you can look at. publish_flashcard_deck.
+3. Tell me it's ready in one line. Then iterate with me: harder, easier, another angle, another level. Every fact true — if unsure, swap the card.`;
 }
