@@ -196,9 +196,6 @@ export function HomeScreen() {
 
   useWebMcpTools({ generateDeck, openDeck, playDeck, listDecks, findDeck, deleteDeck });
 
-  const pendingLevels =
-    build?.deck && build.deck.slug === activeDeck.slug ? build.pending : [];
-
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-surface-1 px-6">
       <BackdropGrid />
@@ -321,7 +318,6 @@ export function HomeScreen() {
         open={quizOpen}
         onOpenChange={setQuizOpen}
         deck={activeDeck}
-        pendingLevels={pendingLevels}
         shareLinks={activeDeck.slug === DECK.slug}
       />
     </div>

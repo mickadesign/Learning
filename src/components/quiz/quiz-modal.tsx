@@ -1,30 +1,27 @@
 "use client";
 
 import {
-  Fragment,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type MutableRefObject,
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { BorderBeam } from "border-beam";
 import {
   shareTextFor,
   verdictFor,
   type ChoiceQuestion,
   type Deck,
   type ImageCredit,
-  type LevelBrief,
   type OrderItem,
   type OrderQuestion,
   type QuizQuestion,
   type TrueFalseQuestion,
 } from "@/lib/deck";
 import { Button } from "@/components/ui/button";
+import { Confetti } from "@/components/quiz/confetti";
 import { useProximityHover, type ItemRect } from "@/hooks/use-proximity-hover";
 import { useTouchPrimary } from "@/hooks/use-touch-primary";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
@@ -877,18 +874,53 @@ function TimerRing({
   );
 }
 
+/** The deck itself, as a loose fan of three cards: the first illustrated
+ *  cards when the deck has pictures, plain prints otherwise. Each card
+ *  springs up in turn on mount — the deck coming out of its wrapper. */
+function DeckStack({ deck }: { deck: Deck }) {
+  const reduceMotion = useReducedMotion() ?? false;
+  const images = deck.levels
+    .flatMap((lv) => lv.questions)
+    .filter((q): q is ChoiceQuestion => q.kind === "choice" && !!q.image)
+    .slice(0, 3)
+    .map((q) => q.image!);
+  const cards: (string | null)[] = images.length ? images : [null, null, null];
+  return (
+    <span className="relative flex h-14 items-center justify-center" aria-hidden>
+      {cards.map((src, idx) => (
+        <motion.span
+          key={idx}
+          className={cn(
+            // Ring in the panel surface so the overlaps read as stacked prints.
+            "relative block h-12 w-16 overflow-hidden rounded-[8px] border border-border bg-surface-5 ring-2 ring-surface-4",
+            idx > 0 && "-ml-8",
+            ["-rotate-6", "rotate-3", "-rotate-2"][idx]
+          )}
+          initial={
+            reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.9 }
+          }
+          animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+          transition={{ ...cardSpring, delay: 0.06 * idx }}
+        >
+          {src && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={src} alt="" loading="lazy" className="size-full object-cover" />
+          )}
+        </motion.span>
+      ))}
+    </span>
+  );
+}
+
 // ── The modal ───────────────────────────────────────────────
 
-type View = "levels" | "run" | "result";
+type View = "intro" | "run" | "result";
 
 interface QuizModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** The deck to play. Remount (key by slug) when it changes. */
   deck: Deck;
-  /** Levels still being written — shown as placeholders after the real
-   *  ones. Hidden briefs stay hidden. */
-  pendingLevels?: LevelBrief[];
   /** Link shared scores to the prerendered /s/[level]/[score] pages. Only
    *  the built-in deck has them; other decks share the site root. */
   shareLinks?: boolean;
@@ -898,7 +930,6 @@ export function QuizModal({
   open,
   onOpenChange,
   deck,
-  pendingLevels = [],
   shareLinks = false,
 }: QuizModalProps) {
   // The deck drives everything below: levels, pass mark, countdown length.
@@ -908,11 +939,9 @@ export function QuizModal({
   const STORAGE_KEY = `${deck.slug}-quiz-v1`;
 
   const XIcon = useIcon("x");
-  const LockIcon = useIcon("lock");
-  const CheckIcon = useIcon("check");
   const reduceMotion = useReducedMotion() ?? false;
 
-  const [view, setView] = useState<View>("levels");
+  const [view, setView] = useState<View>("intro");
   const [levelIndex, setLevelIndex] = useState(0);
   const [run, setRun] = useState<RunQuestion[] | null>(null);
   const [qIndex, setQIndex] = useState(0);
@@ -943,7 +972,7 @@ export function QuizModal({
   // second tab's scores are picked up.
   useEffect(() => {
     if (!open) return;
-    setView("levels");
+    setView("intro");
     setRun(null);
     setConfirmExit(false);
     setBest(loadBest(STORAGE_KEY));
@@ -1039,9 +1068,9 @@ export function QuizModal({
   const requestClose = useCallback(() => {
     if (view === "run") {
       // Nothing at stake on an untouched first card — go straight back to
-      // the level list instead of asking.
+      // the deck instead of asking.
       if (qIndex === 0 && !revealed) {
-        setView("levels");
+        setView("intro");
         return;
       }
       setConfirmExit(true);
@@ -1074,6 +1103,15 @@ export function QuizModal({
       break;
     }
   }
+
+  // The levels play in sequence with no list to pick from: Start resumes at
+  // the first set of cards the player hasn't passed yet (or from the top once
+  // everything is passed).
+  let startIndex = QUIZ_LEVELS.findIndex(
+    (lv) => (best[lv.id] ?? 0) < PASS_SCORE
+  );
+  if (startIndex < 0) startIndex = 0;
+  const cardCount = QUIZ_LEVELS.reduce((n, lv) => n + lv.questions.length, 0);
 
   // Opens X's composer pre-filled with the score-as-a-challenge line. The
   // link targets the score's share page (/s/[level]/[score]) so the post
@@ -1173,16 +1211,9 @@ export function QuizModal({
                 Exit button in the bottom bar, and the countdown lives there
                 too. */}
             {view !== "run" && (
-              <div className="flex items-center justify-between gap-3 pt-1">
-                {/* The result view keeps only the close control up top — its
-                    own centered title lives with the score. */}
-                {view === "levels" ? (
-                  <h1 className="font-heading text-[28px] leading-none text-foreground">
-                    {deck.headline}
-                  </h1>
-                ) : (
-                  <span />
-                )}
+              <div className="flex items-center justify-end gap-3 pt-1">
+                {/* Only the close control up top: the intro and result views
+                    carry their own centered titles. */}
                 <Button variant="ghost" size="icon-sm" onClick={requestClose}>
                   <XIcon />
                   <span className="sr-only">Close</span>
@@ -1207,163 +1238,62 @@ export function QuizModal({
                       : "justify-center"
                   ),
                 view === "result" && "mt-5 flex flex-1 flex-col",
-                view === "levels" && "mt-3 flex flex-1 flex-col"
+                view === "intro" && "flex flex-1 flex-col"
               )}
             >
-              {view === "levels" && (
-                <div className="flex flex-1 flex-col gap-1.5">
-                  {QUIZ_LEVELS.map((lv, i) => {
-                    const isUnlocked = unlocked(i);
-                    // Hidden tiers are a reward: they only appear once the
-                    // level before them is passed.
-                    if (lv.hidden && !isUnlocked) return null;
-                    const lvBest = best[lv.id];
-                    const card = (
-                      <button
-                        type="button"
-                        disabled={!isUnlocked}
-                        onClick={() => startRun(i)}
-                        className={cn(
-                          // bg-surface-5 sits one step above the panel: white
-                          // on white in light mode, a lighter raised gray in
-                          // dark.
-                          "group relative block w-full rounded-[14px] border border-border bg-surface-5 p-3.5 text-left transition-colors duration-80",
-                          isUnlocked
-                            ? "cursor-pointer hover:border-foreground/30 hover:bg-hover active:bg-active"
-                            : "opacity-50"
-                        )}
-                      >
-                        <span className="block">
-                          {/* The level's illustrated questions, teased as a
-                              loose overlapping fan. The ring matches the panel
-                              surface so the overlaps read as stacked prints. */}
-                          <span className="relative mb-2 flex">
-                            {lv.questions
-                              .filter(
-                                (q) => q.kind === "choice" && q.image
-                              )
-                              .map((q, idx) => (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  key={q.id}
-                                  src={(q as ChoiceQuestion).image}
-                                  alt=""
-                                  loading="lazy"
-                                  className={cn(
-                                    // translate (not margin) on hover so the
-                                    // squeeze runs on the GPU.
-                                    "h-9 w-12 rounded-[6px] object-cover ring-2 ring-surface-5 transition-transform duration-80",
-                                    idx > 0 && "-ml-7",
-                                    ["-rotate-6", "rotate-3", "-rotate-2"][
-                                      idx % 3
-                                    ],
-                                    // On hover the fan squeezes together and
-                                    // the prints straighten out.
-                                    isUnlocked && "group-hover:rotate-0",
-                                    isUnlocked &&
-                                      idx === 1 &&
-                                      "group-hover:-translate-x-1.5",
-                                    isUnlocked &&
-                                      idx === 2 &&
-                                      "group-hover:-translate-x-3"
-                                  )}
-                                />
-                              ))}
-                            {!isUnlocked && (
-                              <span className="absolute inset-y-0 left-0 flex w-[88px] items-center justify-center">
-                                <span className="flex size-8 items-center justify-center rounded-full bg-surface-5">
-                                  <LockIcon
-                                    size={16}
-                                    className="text-muted-foreground"
-                                  />
-                                </span>
-                              </span>
-                            )}
-                          </span>
-                          {/* Best score sits on the title line, baseline-
-                              aligned with it. */}
-                          <span className="flex items-baseline justify-between gap-4">
-                            <span className="font-heading text-[21px] leading-none text-foreground">
-                              {lv.name} level
-                            </span>
-                            {isUnlocked && lvBest !== undefined && (
-                              <span className="shrink-0 text-[12px] tabular-nums text-muted-foreground">
-                                Best score: {lvBest}/{lv.questions.length}
-                              </span>
-                            )}
-                          </span>
+              {view === "intro" && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{
+                    opacity: 1,
+                    transition: { duration: spring.moderate.duration },
+                  }}
+                  className="flex flex-1 flex-col items-center text-center"
+                >
+                  {/* The unlock moment centers in the space above the pinned
+                      CTA: the deck springs up as a fan of cards while a burst
+                      of confetti settles around it. */}
+                  <div className="relative flex flex-1 flex-col items-center justify-center">
+                    <Confetti
+                      className="-inset-x-6 -top-12 bottom-0"
+                      originY="calc(50% - 96px)"
+                    />
+                    <DeckStack deck={deck} />
+                    <p className="mt-8 flex items-center gap-1 text-[13px] text-muted-foreground">
+                      <DrawnCheck size={16} />
+                      Deck unlocked
+                    </p>
+                    <h2 className="mt-2 max-w-[20ch] font-heading text-[28px] leading-[1.1] text-foreground">
+                      {deck.headline}
+                    </h2>
+                    <p className="mt-3 max-w-[32ch] text-[15px] leading-relaxed text-muted-foreground">
+                      {cardCount} cards, ready when you are.{" "}
+                      {QUIZ_LEVELS[startIndex].tagline}
+                    </p>
+                    {bestLevelIndex >= 0 && (
+                      <p className="mt-2 text-[13px] tabular-nums text-muted-foreground">
+                        Best score: {best[QUIZ_LEVELS[bestLevelIndex].id]}/
+                        {QUIZ_LEVELS[bestLevelIndex].questions.length}
+                      </p>
+                    )}
+                  </div>
 
-                          {/* Passed (pass mark or better) — a quiet check
-                              above the rating. */}
-                          {isUnlocked && (lvBest ?? 0) >= PASS_SCORE && (
-                            <CheckIcon
-                              size={20}
-                              className="absolute right-4 top-4 text-muted-foreground"
-                            />
-                          )}
-                          <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">
-                            {isUnlocked
-                              ? lv.tagline
-                              : `Score ${PASS_SCORE}/${QUIZ_LEVELS[i - 1].questions.length} as ${QUIZ_LEVELS[i - 1].name} to unlock.`}
-                          </span>
-                        </span>
-                      </button>
-                    );
-                    // Hidden levels earn a golden beam. Config hand-tuned
-                    // in the Libraries.dev Studio; "gold" isn't a variant in
-                    // border-beam@1.3.0, so "sunset" + the 40deg hue base
-                    // lands the same tone.
-                    return lv.hidden ? (
-                      <BorderBeam
-                        key={lv.id}
-                        colorVariant="sunset"
-                        duration={3.12}
-                        brightness={1.4}
-                        hueRange={24}
-                        borderRadius={14}
-                        style={
-                          {
-                            "--beam-hue-base": "40deg",
-                            "--beam-inner-opacity": "0.15",
-                          } as CSSProperties
-                        }
-                      >
-                        {card}
-                      </BorderBeam>
-                    ) : (
-                      <Fragment key={lv.id}>{card}</Fragment>
-                    );
-                  })}
-
-                  {/* Levels the generator hasn't written yet: a dashed
-                      placeholder per brief, so the list shows what's coming
-                      while the first level is already playable. */}
-                  {pendingLevels
-                    .filter((brief) => !brief.hidden)
-                    .map((brief) => (
-                      <div
-                        key={brief.id}
-                        aria-busy
-                        className="relative block w-full rounded-[14px] border border-dashed border-border bg-surface-5 p-3.5 text-left opacity-70"
-                      >
-                        <span className="flex items-baseline justify-between gap-4">
-                          <span className="font-heading text-[21px] leading-none text-foreground">
-                            {brief.name} level
-                          </span>
-                          <span className="shrink-0 text-[12px] text-muted-foreground motion-safe:animate-pulse">
-                            Writing…
-                          </span>
-                        </span>
-                        <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">
-                          {brief.tagline}
-                        </span>
-                      </div>
-                    ))}
-
-                  {/* Share + credit ride the bottom of the fixed-height
-                      modal; the share button waits for a first score. */}
-                  {bestLevelIndex >= 0 && (
-                    <div className="mt-auto pt-2">
+                  {/* Start pins to the bottom; share waits for a first score. */}
+                  <div className="w-full space-y-2">
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className="w-full rounded-full"
+                      onClick={() => startRun(startIndex)}
+                      autoFocus
+                    >
+                      {bestLevelIndex < 0
+                        ? "Start the cards"
+                        : startIndex > 0
+                          ? "Keep going"
+                          : "Play again"}
+                    </Button>
+                    {bestLevelIndex >= 0 && (
                       <Button
                         variant="secondary"
                         size="lg"
@@ -1373,15 +1303,10 @@ export function QuizModal({
                       >
                         Share your score
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                   {deck.author && (
-                    <p
-                      className={cn(
-                        "pt-2 text-center text-[13px] text-muted-foreground",
-                        bestLevelIndex < 0 && "mt-auto"
-                      )}
-                    >
+                    <p className="pt-3 text-center text-[13px] text-muted-foreground">
                       Created by{" "}
                       {deck.author.url ? (
                         <a
@@ -1397,7 +1322,7 @@ export function QuizModal({
                       )}
                     </p>
                   )}
-                </div>
+                </motion.div>
               )}
 
               {view === "run" && current && showTimedIntro && (
@@ -1494,8 +1419,10 @@ export function QuizModal({
                   }}
                   className="flex flex-1 flex-col items-center text-center"
                 >
-                  {/* Score block centers in the space above the pinned CTAs. */}
-                  <div className="flex flex-1 flex-col items-center justify-center">
+                  {/* Score block centers in the space above the pinned CTAs.
+                      A pass earns the same confetti as the unlock. */}
+                  <div className="relative flex flex-1 flex-col items-center justify-center">
+                    {passed && <Confetti className="-inset-x-6" />}
                     {passed && (
                       <h2 className="mb-8 font-heading text-[28px] leading-none text-foreground">
                         Congratulations!
@@ -1510,6 +1437,12 @@ export function QuizModal({
                     <p className="mt-3 max-w-[30ch] text-[14px] leading-relaxed text-muted-foreground">
                       {verdictFor(deck, score, run?.length ?? 0)}
                     </p>
+                    {passed && nextLevel && (
+                      <p className="mt-4 flex items-center gap-1 text-[13px] text-muted-foreground">
+                        <DrawnCheck size={16} />
+                        {nextLevel.questions.length} more cards unlocked
+                      </p>
+                    )}
                   </div>
                   <div className="w-full space-y-2">
                     {passed && nextLevel && unlocked(levelIndex + 1) ? (
@@ -1520,7 +1453,7 @@ export function QuizModal({
                         onClick={() => startRun(levelIndex + 1)}
                         autoFocus
                       >
-                        Next level
+                        Keep going
                       </Button>
                     ) : (
                       <Button
@@ -1537,9 +1470,9 @@ export function QuizModal({
                       variant="secondary"
                       size="lg"
                       className="w-full rounded-full"
-                      onClick={() => setView("levels")}
+                      onClick={() => setView("intro")}
                     >
-                      Show all levels
+                      Back to the deck
                     </Button>
                   </div>
                 </motion.div>

@@ -37,6 +37,17 @@ import {
   uniqueSlug,
 } from "./deck-store";
 
+declare global {
+  interface Window {
+    /** A plain-JavaScript door to the same tools, for agents whose browser
+     *  can only run page scripts: `window.flashcards.call(name, args)`. */
+    flashcards?: {
+      call: (name: string, args?: Record<string, unknown>) => Promise<CallToolResult>;
+      tools: () => { name: string; title: string; description: string; inputSchema: Record<string, unknown> }[];
+    };
+  }
+}
+
 export interface DeckSummary {
   slug: string;
   title: string;
@@ -152,6 +163,9 @@ const GenerateInput = z.object({
   notes: z.string().max(2000).optional(),
 });
 const PlayInput = z.object({ slug: z.string().min(1).optional() });
+const FormatInput = z.object({
+  section: z.enum(["guide", "examples", "schema", "all"]).default("guide"),
+});
 const FindImagesInput = z.object({
   query: z.string().trim().min(1).max(200),
   title: z.string().trim().min(1).max(200).optional(),
@@ -165,7 +179,7 @@ function jsonSchema(schema: z.ZodType): Record<string, unknown> {
 }
 
 const WORKFLOW = [
-  "1. get_flashcard_format — the card format, an example of each kind, the rules, the house style.",
+  "1. get_flashcard_format — this guide; ask for section \"examples\" (one card of each kind) or \"schema\" (the deck JSON Schema) when you need them.",
   "2. start_flashcard_deck — title, headline (a question), tagline, verdicts, and the levels (usually four: three open, the last hidden and timed).",
   "3. add_flashcards — about ten cards per level, in one or more batches; ids are assigned for you. For a card about something you can look at, find_flashcard_images first and put the URL and credit on the card.",
   "4. publish_flashcard_deck — validates, saves the deck in this browser, and opens the quiz.",
@@ -178,12 +192,21 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
       name: "get_flashcard_format",
       title: "Flashcard format and authoring guide",
       description:
-        "Read this first. Returns the workflow for writing a deck on this site, the deck JSON Schema (question kinds choice / truefalse / order, the correct answer, the fact revealed after answering, optional pictures), one example card of each kind, the rules the site enforces, and the house style.",
-      inputSchema: { type: "object", properties: {} },
+        "Read this first. Short by default (about 3 KB): the workflow for writing a deck on this site, the rules the site enforces, and the house style. Ask for section \"examples\" (one card of each kind — choice, truefalse, order, and one with a picture) or \"schema\" (the deck JSON Schema) when you need them, or \"all\".",
+      inputSchema: {
+        type: "object",
+        properties: {
+          section: {
+            type: "string",
+            enum: ["guide", "examples", "schema", "all"],
+            description: "What to return. Default \"guide\".",
+          },
+        },
+      },
       readOnly: true,
-      async execute() {
-        const schema = deckJsonSchema();
-        const body = [
+      async execute(input) {
+        const { section } = FormatInput.parse(input ?? {});
+        const guide = [
           "Workflow:",
           ...WORKFLOW.map((w) => `  ${w}`),
           "",
@@ -192,20 +215,28 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
           "",
           "House style:",
           ...HOUSE_STYLE.map((r) => `  - ${r}`),
-          "",
-          "Example cards:",
-          JSON.stringify(EXAMPLE_CARDS, null, 2),
-          "",
-          "Deck JSON Schema:",
-          JSON.stringify(schema, null, 2),
-        ].join("\n");
-        return text(body, {
-          workflow: WORKFLOW,
-          rules: AUTHORING_RULES,
-          houseStyle: HOUSE_STYLE,
-          examples: EXAMPLE_CARDS,
-          schema,
-        });
+        ];
+        const examples = ["Example cards:", JSON.stringify(EXAMPLE_CARDS, null, 2)];
+        const schema = () => ["Deck JSON Schema:", JSON.stringify(deckJsonSchema(), null, 2)];
+        switch (section) {
+          case "examples":
+            return text(examples.join("\n"), { examples: EXAMPLE_CARDS });
+          case "schema":
+            return text(schema().join("\n"), { schema: deckJsonSchema() });
+          case "all":
+            return text([...guide, "", ...examples, "", ...schema()].join("\n"), {
+              workflow: WORKFLOW,
+              rules: AUTHORING_RULES,
+              houseStyle: HOUSE_STYLE,
+              examples: EXAMPLE_CARDS,
+              schema: deckJsonSchema(),
+            });
+          default:
+            return text(
+              [...guide, "", 'More: section "examples" for one card of each kind, "schema" for the deck JSON Schema.'].join("\n"),
+              { workflow: WORKFLOW, rules: AUTHORING_RULES, houseStyle: HOUSE_STYLE, sections: ["examples", "schema", "all"] }
+            );
+        }
       },
     },
 
@@ -366,7 +397,7 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
         const counts = kindCounts(level.questions);
         const gaps = draftGaps(draft);
         return text(
-          `Added ${added.length} cards to "${levelId}"; it now has ${level.questions.length} (${counts.choice} choice, ${counts.truefalse} truefalse, ${counts.order} order). ${
+          `Added ${added.length} ${added.length === 1 ? "card" : "cards"} to "${levelId}"; it now has ${level.questions.length} (${counts.choice} choice, ${counts.truefalse} truefalse, ${counts.order} order). ${
             gaps.length
               ? `Still needed: ${gaps.join("; ")}.`
               : "Every level has enough cards — publish_flashcard_deck when you're done."
@@ -528,8 +559,30 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
 
 type RegisterArg = Parameters<ModelContext["registerTool"]>[0];
 
-async function register(ctx: ModelContext, h: () => FlashcardToolHandlers, signal: AbortSignal) {
-  for (const tool of tools(h)) {
+/** `window.flashcards`: the same tools, callable by name from any page
+ *  script, returning plain objects. For agents whose browser has no WebMCP
+ *  host and drives the page with a script tool — the polyfill's
+ *  executeTool needs the live RegisteredTool object from getTools(), which
+ *  can't be serialized or rebuilt by hand, and that trips them up. */
+function installPageHelper(defs: ToolDef[]) {
+  const byName = new Map(defs.map((t) => [t.name, t]));
+  window.flashcards = {
+    async call(name, args = {}) {
+      const tool = byName.get(name);
+      if (!tool)
+        throw new Error(`No tool "${name}". Tools: ${[...byName.keys()].join(", ")}.`);
+      return tool.execute(args);
+    },
+    tools: () =>
+      defs.map(({ name, title, description, inputSchema }) => ({ name, title, description, inputSchema })),
+  };
+  return () => {
+    if (window.flashcards?.call) delete window.flashcards;
+  };
+}
+
+async function register(ctx: ModelContext, defs: ToolDef[], signal: AbortSignal) {
+  for (const tool of defs) {
     const def = {
       name: tool.name,
       title: tool.title,
@@ -555,17 +608,22 @@ export function useWebMcpTools(handlers: FlashcardToolHandlers) {
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
+    const defs = tools(() => ref.current);
+    // The page helper first: it needs nothing loaded and works even if the
+    // WebMCP runtime fails to.
+    const uninstall = installPageHelper(defs);
     (async () => {
       await import("@mcp-b/global");
       const ctx = document.modelContext;
       if (!ctx || cancelled) return;
-      await register(ctx, () => ref.current, controller.signal);
+      await register(ctx, defs, controller.signal);
     })().catch((error) => {
       console.warn("WebMCP tools not registered:", error);
     });
     return () => {
       cancelled = true;
       controller.abort();
+      uninstall();
     };
   }, []);
 }

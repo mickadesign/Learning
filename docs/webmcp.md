@@ -18,7 +18,7 @@ agents", and the `<head>` carries
 
 | Tool | Purpose |
 | --- | --- |
-| `get_flashcard_format` | Read first: workflow, JSON Schema, example cards, rules, house style. |
+| `get_flashcard_format` | Read first: workflow, rules, house style; `section` for examples or the JSON Schema. |
 | `find_flashcard_images` | Licensed pictures from Wikipedia / Commons, with a ready-made credit. |
 | `list_flashcard_decks` | Built-in and saved decks with best scores, plus drafts. |
 | `get_flashcard_deck` | Full JSON of a deck or draft. |
@@ -29,6 +29,18 @@ agents", and the `<head>` carries
 | `generate_flashcards` | Have the server's Claude write a deck (needs a key). |
 | `play_flashcards` | Open the quiz on a deck. |
 | `delete_flashcard_deck` | Remove a saved deck or draft. |
+
+## Agents without a WebMCP host
+
+Most agents today reach the tools through a "run a script on the page"
+tool, not a native host. For them the page installs `window.flashcards`:
+`call(name, args)` runs a tool by name and returns a plain object, and
+`tools()` lists them. It is installed before the WebMCP runtime loads and
+works without it. The polyfill's own `executeTool(tool, json)` needs the
+live object from `getTools()` (it carries the page `window`, so it can't be
+serialized or rebuilt), which is exactly what script-driven agents got
+wrong; `/agents.md` shows both paths. Tool results are kept small for the
+same reason — script tools cap and screen large page-derived text.
 
 ## How it's wired
 

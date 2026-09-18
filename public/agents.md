@@ -11,6 +11,11 @@ the shortest path to a finished deck.
 - Protocol: WebMCP. `await document.modelContext.getTools()` lists the tools;
   your host calls them. In a browser without native support the page installs
   a polyfill (`@mcp-b/global`), so the tools are always there.
+- No WebMCP host? If your browser tool can only run scripts on the page, use
+  the helper the page installs: `await window.flashcards.call("<tool name>",
+  { ...args })` returns the tool's result as a plain object, and
+  `window.flashcards.tools()` lists the tools with their input schemas. See
+  "Calling the tools from a page script" below.
 - Storage: decks you make are saved in this browser's `localStorage` only. No
   accounts, no server-side storage.
 - The built-in deck (slug `art-timeline`) is always present and can't be
@@ -38,6 +43,34 @@ Two shortcuts:
   works when the deployment has an Anthropic key on the server; when it
   doesn't, the error says so and points you to the authoring tools.
 
+## Calling the tools from a page script
+
+A native WebMCP host calls the tools for you. Without one, drive them from
+the page:
+
+```js
+// Simplest: the page helper. Plain objects in and out.
+const decks = await window.flashcards.call("list_flashcard_decks", {});
+const guide = await window.flashcards.call("get_flashcard_format", {});
+const draft = await window.flashcards.call("start_flashcard_deck", { title: "…", headline: "…?", tagline: "…", verdicts: { low: "…", mid: "…", high: "…", perfect: "…" }, levels: [{ id: "one", name: "One", tagline: "…" }] });
+await window.flashcards.call("add_flashcards", { slug: draft.structuredContent.slug, level: "one", cards: [/* … */] });
+await window.flashcards.call("publish_flashcard_deck", { slug: draft.structuredContent.slug });
+```
+
+Through the standard API instead, `document.modelContext.executeTool` takes
+the **tool object from `getTools()`**, not its name — and that object holds a
+reference to the page's `window`, so it can't be serialized or rebuilt by
+hand. Look it up fresh in the same script:
+
+```js
+const ctx = document.modelContext;
+const tool = (await ctx.getTools()).find((t) => t.name === "list_flashcard_decks");
+const result = JSON.parse(await ctx.executeTool(tool, JSON.stringify({})));
+```
+
+Results are small by design; `get_flashcard_format` is about 3 KB unless you
+ask for the schema or examples.
+
 ## Tools
 
 Every tool returns `content` (one text block) and `structuredContent` (an
@@ -45,11 +78,14 @@ object). Failures throw with a message that says what to fix.
 
 ### `get_flashcard_format` — read-only
 
-Input: none.
+Input: `{ section? }` — `"guide"` (default), `"examples"`, `"schema"`, or
+`"all"`.
 
-Returns the workflow, the deck JSON Schema, one example card of each kind,
-the rules the site enforces, and the house style. `structuredContent`:
-`{ workflow, rules, houseStyle, examples, schema }`.
+The guide is the workflow, the rules the site enforces, and the house style
+(about 3 KB). `"examples"` returns one card of each kind, including one with
+a picture and credit; `"schema"` the deck JSON Schema; `"all"` everything.
+`structuredContent` carries the same as objects: `{ workflow, rules,
+houseStyle }`, `{ examples }`, `{ schema }`.
 
 ### `find_flashcard_images` — read-only
 

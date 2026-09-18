@@ -3,7 +3,7 @@
  *  through the WebMCP tools, then iterate. Self-contained, so it works in
  *  any agent that can browse and call page tools. */
 export function agentPrompt(origin: string): string {
-  return `Open ${origin}/ in your browser and keep the page open. The moment it loads it registers WebMCP tools on document.modelContext (the reference is ${origin}/agents.md); use those tools rather than clicking through the page. If you have no way to open a web page and call its tools, say so and stop.
+  return `Open ${origin}/ in your browser and keep the page open. The moment it loads it registers WebMCP tools on document.modelContext (the reference is ${origin}/agents.md); use those tools rather than clicking through the page. If your browser tool can only run scripts on the page, call them with \`await window.flashcards.call("<tool name>", { ...args })\` — it returns a plain object. If you have no way to open a web page at all, say so and stop.
 
 Then:
 1. Ask me one question — what would I like to learn? — and wait for my answer.
