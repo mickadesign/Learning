@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Confetti } from "@/components/quiz/confetti";
 import { WanderingCursor } from "@/components/wandering-cursor";
+import { DeckList } from "@/components/deck-list";
 import { AgentPromptButton } from "@/components/agent-prompt-button";
 import { QuizModal } from "@/components/quiz/quiz-modal";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -285,6 +286,22 @@ export function HomeScreen() {
           </motion.h1>
         </AnimatePresence>
 
+        {/* The decks on this page, once there is a choice to make. They step
+            aside while an agent is writing. */}
+        <AnimatePresence initial={false}>
+          {decks.length > 1 && agentState !== "working" && (
+            <motion.div
+              key="decks"
+              className="mt-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { duration: spring.moderate.duration } }}
+              exit={{ opacity: 0, transition: { duration: spring.moderate.exit.duration } }}
+            >
+              <DeckList decks={decks} onPlay={(slug) => playDeck(slug)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Status under the headline: what the generator is doing, or what this
             deployment can do. */}
         <AnimatePresence mode="wait" initial={false}>
@@ -300,7 +317,10 @@ export function HomeScreen() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, transition: { duration: spring.fast.exit.duration } }}
             transition={{ duration: spring.moderate.duration, ease: "easeOut" }}
-            className="mt-8 flex min-h-[28px] items-center gap-3 text-[14px] leading-snug text-muted-foreground"
+            className={cn(
+              "flex min-h-[28px] items-center gap-3 text-[14px] leading-snug text-muted-foreground",
+              decks.length > 1 && agentState !== "working" ? "mt-4" : "mt-8"
+            )}
           >
             {build ? (
               <>
@@ -310,7 +330,7 @@ export function HomeScreen() {
                 </span>
                 {build.deck && !quizOpen && (
                   <Button
-                    variant="secondary"
+                    variant="primary"
                     size="sm"
                     className="ml-auto shrink-0 rounded-full"
                     onClick={() => openDeck(build.deck!)}
@@ -332,7 +352,7 @@ export function HomeScreen() {
                 <span>“{activity.deck.title}” is ready.</span>
                 {!quizOpen && (
                   <Button
-                    variant="secondary"
+                    variant="primary"
                     size="sm"
                     className="ml-auto shrink-0 rounded-full"
                     onClick={() => openDeck(activity.deck)}
