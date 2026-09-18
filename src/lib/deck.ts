@@ -213,10 +213,38 @@ export const LevelCardsSchema = z.object({
 const withOptionalId = <T extends z.ZodRawShape>(shape: z.ZodObject<T>) =>
   shape.extend({ id: z.string().min(1).optional().describe("Optional; assigned if missing") });
 
-/** A card as an author may send it: same as a question, id optional. */
+/** A picture named rather than fetched: the exact Wikipedia article of the
+ *  thing a card shows. The site (server or page) looks up that article's
+ *  lead image, sets the slot, and fills in the credit — so an author never
+ *  handles URLs. Dropped quietly when the article has no free image. */
+export const PictureHintSchema = z.object({
+  wikipediaTitle: z
+    .string()
+    .min(1)
+    .describe("Exact English Wikipedia article title of the thing pictured"),
+  slot: z
+    .enum(["image", "revealImage"])
+    .default("revealImage")
+    .describe(
+      "image: shown while answering (\"what is this?\" cards); revealImage: blurred until the answer (cards the picture would give away). Default revealImage."
+    ),
+  alt: z.string().min(1).describe("What the picture shows, without naming the answer"),
+});
+export type PictureHint = z.infer<typeof PictureHintSchema>;
+
+/** A card as an author may send it: same as a question, id optional, and a
+ *  `picture` hint in place of image fields on choice and truefalse cards. */
 export const CardInputSchema = z.discriminatedUnion("kind", [
-  withOptionalId(ChoiceQuestionSchema),
-  withOptionalId(TrueFalseQuestionSchema),
+  withOptionalId(ChoiceQuestionSchema).extend({
+    picture: PictureHintSchema.optional().describe(
+      "Name the Wikipedia article of the thing pictured; the site fetches and credits the image"
+    ),
+  }),
+  withOptionalId(TrueFalseQuestionSchema).extend({
+    picture: PictureHintSchema.optional().describe(
+      "Name the Wikipedia article of the thing pictured; shown blurred until the answer"
+    ),
+  }),
   withOptionalId(OrderQuestionSchema),
 ]);
 export type CardInput = z.infer<typeof CardInputSchema>;
@@ -291,7 +319,7 @@ export const AUTHORING_RULES = [
   "Every card has a fact: one line shown after answering, right or wrong, that adds something.",
   "Question ids are unique across the deck (omit them when adding cards and they are assigned).",
   "passScore can't exceed a level's card count; the reference deck uses 10 cards per level and passes at 7.",
-  "Pictures are optional and never invented: find them with find_flashcard_images (Wikipedia / Wikimedia Commons, licensed) and copy its credit into imageCredit. image shows sharp while answering (\"what is this?\" cards); revealImage stays blurred until the answer (\"who made X?\" cards, so the picture can't spoil it). imageAlt describes the picture without naming the answer.",
+  "Pictures: for a card about something you can look at (a work, a building, a species, an object, a place), set picture: { wikipediaTitle, slot, alt } with the exact English Wikipedia article title of the thing pictured; the site fetches that article's lead image and credits it. slot \"image\" shows sharp while answering (\"what is this?\" cards); \"revealImage\" stays blurred until the answer (\"who made X?\" cards, so the picture can't spoil it). alt describes the picture without naming the answer. To pick a specific file instead, find_flashcard_images returns licensed candidates with a ready credit for image/revealImage + imageCredit. Never invent an image URL.",
   "Level ids and the deck slug are lowercase letters, digits and dashes.",
 ];
 

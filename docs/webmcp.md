@@ -57,6 +57,13 @@ same reason — script tools cap and screen large page-derived text.
   the Wikipedia page-summary endpoint (an article's lead image) and the
   Commons search API, both keyless and cross-origin. The same module serves
   the CLI (`npm run find-images`) and the server generator.
+- Cards sent to `add_flashcards` or `import_flashcards` may carry a
+  `picture: { wikipediaTitle, slot, alt }` hint instead of image fields
+  (`PictureHintSchema` in `src/lib/deck.ts`). `attachPicture` in
+  `image-search.ts` resolves it on the page, the way the server generator
+  does: the article's lead image goes in the slot with alt and credit; a
+  hint with no free image is dropped and named in the result. The add
+  result also counts the level's cards still without a picture.
 - `@mcp-b/global` is imported lazily in the browser. It wraps the native API
   when present and installs a polyfill otherwise.
 - Example cards, the rules and the house style live in `src/lib/deck.ts`

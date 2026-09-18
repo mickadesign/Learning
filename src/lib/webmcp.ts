@@ -19,14 +19,16 @@ import {
   DeckStartSchema,
   EXAMPLE_CARDS,
   HOUSE_STYLE,
+  PictureHintSchema,
   deckJsonSchema,
   parseDeck,
   slugify,
+  type CardInput,
   type Deck,
   type Draft,
   type QuizQuestion,
 } from "./deck";
-import { creditFor, findImages } from "./image-search";
+import { attachPicture, creditFor, findImages } from "./image-search";
 import {
   getDraft,
   listDrafts,
@@ -112,6 +114,43 @@ function kindCounts(questions: QuizQuestion[]) {
   return counts;
 }
 
+/** Cards that could carry a picture but don't — choice and truefalse cards
+ *  with neither slot filled. Order cards take no picture. */
+function withoutPicture(questions: QuizQuestion[]): number {
+  return questions.filter(
+    (q) => q.kind !== "order" && !("image" in q && q.image) && !q.revealImage
+  ).length;
+}
+
+/** Resolve `picture` hints inside a raw, not-yet-validated deck (the import
+ *  path), leaving everything else for parseDeck to judge. */
+async function resolveRawPictures(raw: unknown): Promise<{ deck: unknown; missing: string[] }> {
+  const missing: string[] = [];
+  if (!raw || typeof raw !== "object" || !Array.isArray((raw as { levels?: unknown }).levels))
+    return { deck: raw, missing };
+  const levels = await Promise.all(
+    ((raw as { levels: unknown[] }).levels).map(async (level) => {
+      if (!level || typeof level !== "object" || !Array.isArray((level as { questions?: unknown }).questions))
+        return level;
+      const questions = await Promise.all(
+        ((level as { questions: unknown[] }).questions).map(async (q) => {
+          if (!q || typeof q !== "object" || !("picture" in q)) return q;
+          const hint = PictureHintSchema.safeParse((q as { picture: unknown }).picture);
+          if (!hint.success) return q;
+          const { card, found } = await attachPicture({
+            ...(q as unknown as { kind: string }),
+            picture: hint.data,
+          });
+          if (!found) missing.push(hint.data.wikipediaTitle);
+          return card;
+        })
+      );
+      return { ...level, questions };
+    })
+  );
+  return { deck: { ...(raw as object), levels }, missing };
+}
+
 /** What a draft still needs before it can be published. */
 function draftGaps(d: Draft): string[] {
   return d.levels.flatMap((l) => {
@@ -181,7 +220,7 @@ function jsonSchema(schema: z.ZodType): Record<string, unknown> {
 const WORKFLOW = [
   "1. get_flashcard_format — this guide; ask for section \"examples\" (one card of each kind) or \"schema\" (the deck JSON Schema) when you need them.",
   "2. start_flashcard_deck — title, headline (a question), tagline, verdicts, and the levels (usually four: three open, the last hidden and timed).",
-  "3. add_flashcards — about ten cards per level, in one or more batches; ids are assigned for you. For a card about something you can look at, find_flashcard_images first and put the URL and credit on the card.",
+  "3. add_flashcards — about ten cards per level, in one or more batches; ids are assigned for you. For a card about something you can look at, add picture: { wikipediaTitle, slot, alt } and the site fetches and credits the picture itself (find_flashcard_images only when you want to pick a specific file).",
   "4. publish_flashcard_deck — validates, saves the deck in this browser, and opens the quiz.",
   "Or: import_flashcards with a complete deck; or generate_flashcards to have the site's own AI write one (needs the server to have a key).",
 ];
@@ -353,7 +392,7 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
       name: "add_flashcards",
       title: "Add cards to a draft",
       description:
-        "Append cards to one level of a draft started with start_flashcard_deck. Send any number per call (a whole level of ten, or a few at a time). Each card is a choice (options[0] correct), truefalse, or order card with a one-line fact; ids are assigned when omitted. Returns the level's counts and what the draft still needs.",
+        "Append cards to one level of a draft started with start_flashcard_deck. Send any number per call (a whole level of ten, or a few at a time). Each card is a choice (options[0] correct), truefalse, or order card with a one-line fact; ids are assigned when omitted. For a card about something you can look at, add picture: { wikipediaTitle, slot, alt } — the site fetches that Wikipedia article's lead image and credits it, no URL needed. Returns the level's counts, which pictures were attached, and what the draft still needs.",
       inputSchema: jsonSchema(AddCardsInput),
       async execute(input) {
         const parsed = AddCardsInput.safeParse(input);
@@ -371,7 +410,7 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
           );
         const taken = new Set(draft.levels.flatMap((l) => l.questions.map((q) => q.id)));
         let n = level.questions.length;
-        const added: QuizQuestion[] = [];
+        const added: (CardInput & { id: string })[] = [];
         const problems: string[] = [];
         cards.forEach((card, i) => {
           if (card.kind === "choice" && new Set(card.options).size !== card.options.length)
@@ -389,25 +428,52 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
             while (taken.has(id));
           }
           taken.add(id);
-          added.push({ ...card, id } as QuizQuestion);
+          added.push({ ...card, id } as CardInput & { id: string });
         });
         if (problems.length) throw new Error(`Nothing added:\n${problems.map((p) => `  ${p}`).join("\n")}`);
-        level.questions.push(...added);
+        // Picture hints become real, credited images here — one lookup per
+        // hinted card, all in flight together. A hint whose article has no
+        // free image is dropped and named in the result.
+        const attached: string[] = [];
+        const missing: string[] = [];
+        const resolved = await Promise.all(
+          added.map(async (card) => {
+            if (card.kind === "order" || !card.picture) {
+              const { picture: _drop, ...rest } = card as typeof card & { picture?: unknown };
+              void _drop;
+              return rest as QuizQuestion;
+            }
+            const hint = card.picture;
+            const { card: withPicture, found } = await attachPicture(card);
+            (found ? attached : missing).push(found ? withPicture.id : hint.wikipediaTitle);
+            return withPicture as QuizQuestion;
+          })
+        );
+        level.questions.push(...resolved);
         saveDraft(draft);
         const counts = kindCounts(level.questions);
         const gaps = draftGaps(draft);
+        const bare = withoutPicture(level.questions);
+        const pictureNotes = [
+          attached.length ? `${attached.length} with a picture` : "",
+          missing.length
+            ? `no free image for ${missing.map((t) => `"${t}"`).join(", ")} (try find_flashcard_images or another article)`
+            : "",
+          bare ? `${bare} ${bare === 1 ? "card" : "cards"} in this level still ${bare === 1 ? "has" : "have"} no picture — add picture: { wikipediaTitle, slot, alt } where there's something to look at` : "",
+        ].filter(Boolean);
         return text(
-          `Added ${added.length} ${added.length === 1 ? "card" : "cards"} to "${levelId}"; it now has ${level.questions.length} (${counts.choice} choice, ${counts.truefalse} truefalse, ${counts.order} order). ${
+          `Added ${resolved.length} ${resolved.length === 1 ? "card" : "cards"} to "${levelId}"; it now has ${level.questions.length} (${counts.choice} choice, ${counts.truefalse} truefalse, ${counts.order} order). ${
             gaps.length
               ? `Still needed: ${gaps.join("; ")}.`
               : "Every level has enough cards — publish_flashcard_deck when you're done."
-          }`,
+          }${pictureNotes.length ? ` Pictures: ${pictureNotes.join("; ")}.` : ""}`,
           {
             slug,
             level: levelId,
-            added: added.map((q) => q.id),
+            added: resolved.map((q) => q.id),
             levels: draft.levels.map((l) => ({ id: l.id, cards: l.questions.length })),
             gaps,
+            pictures: { attached, missing, withoutPicture: bare },
           }
         );
       },
@@ -461,7 +527,8 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
         required: ["deck"],
       },
       async execute(input) {
-        const { deck: raw, replace } = ImportInput.parse(input);
+        const { deck: rawInput, replace } = ImportInput.parse(input);
+        const { deck: raw, missing } = await resolveRawPictures(rawInput);
         const parsed = parseDeck(raw);
         const existing = h().findDeck(parsed.slug);
         const builtIn = h().listDecks().find((d) => d.slug === parsed.slug)?.builtIn;
@@ -470,7 +537,12 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
         const deck = { ...parsed, slug };
         saveDeck(deck);
         h().openDeck(deck);
-        return text(`Imported and opened "${deck.title}" (${slug}).`, { slug, title: deck.title });
+        return text(
+          `Imported and opened "${deck.title}" (${slug}).${
+            missing.length ? ` No free image for ${missing.map((t) => `"${t}"`).join(", ")}; those cards have no picture.` : ""
+          }`,
+          { slug, title: deck.title, pictures: { missing } }
+        );
       },
     },
 

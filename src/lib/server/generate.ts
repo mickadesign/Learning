@@ -12,12 +12,13 @@ import {
   ChoiceQuestionSchema,
   DeckPlanSchema,
   OrderQuestionSchema,
+  PictureHintSchema,
   TrueFalseQuestionSchema,
   type DeckPlan,
   type LevelBrief,
   type QuizQuestion,
 } from "../deck.ts";
-import { creditFor, wikipediaLeadImage } from "../image-search.ts";
+import { attachPicture as resolvePicture } from "../image-search.ts";
 
 export const MODEL = process.env.FLASHCARDS_MODEL ?? "claude-opus-5";
 /** Thinking depth for the card-writing pass. Facts must be right, so the
@@ -31,19 +32,6 @@ const EFFORT = (process.env.FLASHCARDS_EFFORT ?? "medium") as
  *  shows; the server fetches that article's lead image and credits it.
  *  FLASHCARDS_IMAGES=off keeps decks text-only. */
 const IMAGES = process.env.FLASHCARDS_IMAGES !== "off";
-
-const PictureHintSchema = z.object({
-  wikipediaTitle: z
-    .string()
-    .min(1)
-    .describe("Exact English Wikipedia article title of the thing pictured"),
-  slot: z
-    .enum(["image", "revealImage"])
-    .describe(
-      "image: shown while answering (\"what is this?\" cards); revealImage: blurred until the answer (cards the picture would give away)"
-    ),
-  alt: z.string().min(1).describe("What the picture shows, without naming the answer"),
-});
 
 /** What the writer returns: cards, each optionally naming its picture. */
 const AuthoredCardsSchema = z.object({
@@ -59,23 +47,18 @@ const AuthoredCardsSchema = z.object({
 });
 type AuthoredCard = z.infer<typeof AuthoredCardsSchema>["questions"][number];
 
-/** Resolve a card's picture hint to a real, credited image — or drop the
- *  hint when the article has no reusable lead image. */
+/** Resolve a card's picture hint to a real, credited image (the shared
+ *  resolver in image-search) — or drop the hint when images are off or the
+ *  article has no reusable lead image. */
 async function attachPicture(card: AuthoredCard, id: string): Promise<QuizQuestion> {
   if (card.kind === "order") return { ...card, id };
-  const { picture, ...rest } = card;
-  if (!picture || !IMAGES) return { ...rest, id } as QuizQuestion;
-  const found = await wikipediaLeadImage(picture.wikipediaTitle).catch(() => null);
-  if (!found) return { ...rest, id } as QuizQuestion;
-  // A true/false card's picture only ever appears with the answer.
-  const slot = rest.kind === "truefalse" ? "revealImage" : picture.slot;
-  return {
-    ...rest,
-    id,
-    [slot]: found.url,
-    imageAlt: picture.alt,
-    imageCredit: creditFor(found),
-  } as QuizQuestion;
+  if (!IMAGES) {
+    const { picture: _drop, ...rest } = card;
+    void _drop;
+    return { ...rest, id } as QuizQuestion;
+  }
+  const { card: resolved } = await resolvePicture(card);
+  return { ...resolved, id } as QuizQuestion;
 }
 
 /** True when the server has credentials to call Claude. */

@@ -10,7 +10,7 @@
 // in Node (the generator, the CLI); Node requests carry a User-Agent as
 // Wikimedia asks.
 
-import type { ImageCredit } from "./deck";
+import type { ImageCredit, PictureHint } from "./deck";
 
 export interface ImageCandidate {
   /** A resized copy (about `width` px wide) to put on the card. */
@@ -258,4 +258,31 @@ export function creditFor(c: ImageCandidate): ImageCredit {
   if (c.author) credit.author = c.author;
   if (c.license) credit.license = c.license;
   return credit;
+}
+
+/** Resolve a card's `picture` hint to a real, credited image on the card:
+ *  the named article's lead image goes in the hinted slot (always the
+ *  reveal slot on a true/false card, whose picture would give the answer
+ *  away), with the alt text and the credit. `found` is null when the
+ *  article has no reusable lead image; the card comes back untouched then,
+ *  minus the hint. */
+export async function attachPicture<T extends { kind: string }>(
+  card: T & { picture?: PictureHint },
+  options: LookupOptions = {}
+): Promise<{ card: T; found: ImageCandidate | null }> {
+  const { picture, ...rest } = card;
+  const bare = rest as unknown as T;
+  if (!picture || card.kind === "order") return { card: bare, found: null };
+  const found = await wikipediaLeadImage(picture.wikipediaTitle, options).catch(() => null);
+  if (!found) return { card: bare, found: null };
+  const slot = card.kind === "truefalse" ? "revealImage" : picture.slot;
+  return {
+    card: {
+      ...bare,
+      [slot]: found.url,
+      imageAlt: picture.alt,
+      imageCredit: creditFor(found),
+    },
+    found,
+  };
 }

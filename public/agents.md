@@ -28,8 +28,9 @@ the shortest path to a finished deck.
 2. `start_flashcard_deck` — title, headline (a question), tagline, verdicts,
    and the levels without cards. You get a slug back.
 3. `add_flashcards` — about ten cards per level, in one or more batches.
-   For a card about something you can look at, call `find_flashcard_images`
-   first and put its URL and credit on the card.
+   For a card about something you can look at, add
+   `picture: { wikipediaTitle, slot, alt }`; the site fetches that article's
+   lead image and credits it. No URL to find or copy.
 4. `publish_flashcard_deck` — validates, saves, and opens the quiz.
 
 About four levels of ten cards is a complete deck; a single level of ten is
@@ -145,14 +146,25 @@ more cards. A card is one of:
 { "kind": "order", "prompt": "…", "items": [{ "label": "…", "value": 1 }, { "label": "…", "value": 2 }, { "label": "…", "value": 3 }], "fact": "…" }
 ```
 
-Optional on any card: `id` (assigned as `<level>-<n>` when omitted),
-`image` (shown sharp while answering, choice only), `revealImage` (shown
-blurred until the answer; choice and truefalse), `imageAlt`, and
-`imageCredit` (`{ title?, author?, license?, source? }`, shown as a caption
-once the answer is revealed).
+Optional on any card: `id` (assigned as `<level>-<n>` when omitted).
 
-Returns the level's counts by kind and what the draft still needs.
-`structuredContent`: `{ slug, level, added: string[], levels: [{ id, cards }], gaps: string[] }`.
+Optional on choice and truefalse cards, a picture, one of two ways:
+
+- `picture: { wikipediaTitle, slot, alt }` — the exact English Wikipedia
+  article title of the thing pictured, the slot (`"image"` shows sharp
+  while answering, `"revealImage"` stays blurred until the answer; default
+  `revealImage`, and always the reveal on truefalse), and alt text that
+  doesn't name the answer. The site fetches the article's lead image, sets
+  the slot and fills in `imageCredit`. When the article has no free image
+  the hint is dropped and the result names it.
+- `image` or `revealImage` (an `https://` URL from `find_flashcard_images`),
+  `imageAlt`, and `imageCredit` (`{ title?, author?, license?, source? }`,
+  shown as a caption once the answer is revealed), when you want a
+  specific file.
+
+Returns the level's counts by kind, which pictures were attached, how many
+cards in the level still have none, and what the draft still needs.
+`structuredContent`: `{ slug, level, added: string[], levels: [{ id, cards }], gaps: string[], pictures: { attached: string[], missing: string[], withoutPicture: number } }`.
 Nothing is added if any card in the batch is invalid.
 
 ### `publish_flashcard_deck`
@@ -166,9 +178,10 @@ the quiz. `structuredContent`: `{ slug, title, levels, cards }`.
 ### `import_flashcards`
 
 Input: `{ deck, replace? }` — a complete deck matching the JSON Schema from
-`get_flashcard_format`. If a saved deck already uses the slug, a new slug is
-chosen unless `replace` is true. Opens the quiz on it.
-`structuredContent`: `{ slug, title }`.
+`get_flashcard_format`. Cards may carry the same `picture` hint as in
+`add_flashcards`; it is resolved before validation. If a saved deck already
+uses the slug, a new slug is chosen unless `replace` is true. Opens the quiz
+on it. `structuredContent`: `{ slug, title, pictures: { missing: string[] } }`.
 
 ### `generate_flashcards`
 
@@ -207,10 +220,15 @@ Removes a saved deck or a draft. The built-in deck can't be deleted.
 A picture earns its place when the card is about something you can look at:
 a work of art, a building, a species, an object, a map.
 
-- Never invent an image URL. Get one from `find_flashcard_images`: give the
-  exact Wikipedia title when you can name the thing, a search query
-  otherwise. Pick the candidate whose title matches, and copy its `credit`
-  into `imageCredit`.
+- The easy way: name it. Put `picture: { wikipediaTitle, slot, alt }` on
+  the card with the exact English Wikipedia article title, and the site
+  fetches that article's lead image and credits it when the card is added
+  or imported. Only name an article you are sure exists.
+- To choose a specific file, `find_flashcard_images` returns licensed
+  candidates: give the exact Wikipedia title when you can name the thing,
+  a search query otherwise. Pick the one whose title matches, put its `url`
+  in `image` or `revealImage`, and copy its `credit` into `imageCredit`.
+- Never invent an image URL.
 - `image` shows sharp while answering: "what is this?" cards. `revealImage`
   stays blurred until the answer: "who made X?" cards, so the picture can't
   give it away. True/false cards only take `revealImage`.
