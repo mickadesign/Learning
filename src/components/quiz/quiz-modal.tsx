@@ -874,20 +874,28 @@ function TimerRing({
   );
 }
 
-/** The deck itself, as a loose fan of three cards: the first illustrated
- *  cards when the deck has pictures, plain prints otherwise. Each card
- *  springs up in turn on mount — the deck coming out of its wrapper. */
-function DeckStack({ deck }: { deck: Deck }) {
-  const reduceMotion = useReducedMotion() ?? false;
-  const images = deck.levels
+/** Up to three pictures from the deck, for its fan. Either slot counts: a
+ *  thumbnail can't spoil a question that isn't shown next to it. */
+function deckThumbnails(deck: Deck): string[] {
+  return deck.levels
     .flatMap((lv) => lv.questions)
-    .filter((q): q is ChoiceQuestion => q.kind === "choice" && !!q.image)
-    .slice(0, 3)
-    .map((q) => q.image!);
-  const cards: (string | null)[] = images.length ? images : [null, null, null];
+    .flatMap((q) =>
+      q.kind === "choice" ? [q.image ?? q.revealImage] : q.kind === "truefalse" ? [q.revealImage] : []
+    )
+    .filter((src): src is string => !!src)
+    .slice(0, 3);
+}
+
+/** The deck itself, as a loose fan of its first illustrated cards. Each
+ *  card springs up in turn on mount — the deck coming out of its wrapper.
+ *  Not rendered for a deck without pictures: empty frames promise what the
+ *  deck doesn't have. */
+function DeckStack({ images }: { images: string[] }) {
+  const reduceMotion = useReducedMotion() ?? false;
+  if (!images.length) return null;
   return (
-    <span className="relative flex h-14 items-center justify-center" aria-hidden>
-      {cards.map((src, idx) => (
+    <span className="relative mb-8 flex h-14 items-center justify-center" aria-hidden>
+      {images.map((src, idx) => (
         <motion.span
           key={idx}
           className={cn(
@@ -902,10 +910,8 @@ function DeckStack({ deck }: { deck: Deck }) {
           animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
           transition={{ ...cardSpring, delay: 0.06 * idx }}
         >
-          {src && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt="" loading="lazy" className="size-full object-cover" />
-          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src} alt="" loading="lazy" className="size-full object-cover" />
         </motion.span>
       ))}
     </span>
@@ -932,6 +938,7 @@ export function QuizModal({
   deck,
   shareLinks = false,
 }: QuizModalProps) {
+  const thumbnails = deckThumbnails(deck);
   // The deck drives everything below: levels, pass mark, countdown length.
   const QUIZ_LEVELS = deck.levels;
   const PASS_SCORE = deck.passScore;
@@ -1256,10 +1263,12 @@ export function QuizModal({
                   <div className="relative flex flex-1 flex-col items-center justify-center">
                     <Confetti
                       className="-inset-x-6 -top-12 bottom-0"
-                      originY="calc(50% - 96px)"
+                      // Bursts from the fan, or from the check line when the
+                      // deck has no pictures to fan out.
+                      originY={thumbnails.length ? "calc(50% - 96px)" : "calc(50% - 56px)"}
                     />
-                    <DeckStack deck={deck} />
-                    <p className="mt-8 flex items-center gap-1 text-[13px] text-muted-foreground">
+                    <DeckStack images={thumbnails} />
+                    <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
                       <DrawnCheck size={16} />
                       Deck unlocked
                     </p>
