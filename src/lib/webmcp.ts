@@ -26,6 +26,7 @@ import {
   type Draft,
   type QuizQuestion,
 } from "./deck";
+import { creditFor, findImages } from "./image-search";
 import {
   getDraft,
   listDrafts,
@@ -151,6 +152,11 @@ const GenerateInput = z.object({
   notes: z.string().max(2000).optional(),
 });
 const PlayInput = z.object({ slug: z.string().min(1).optional() });
+const FindImagesInput = z.object({
+  query: z.string().trim().min(1).max(200),
+  title: z.string().trim().min(1).max(200).optional(),
+  limit: z.number().int().min(1).max(10).default(5),
+});
 
 function jsonSchema(schema: z.ZodType): Record<string, unknown> {
   const { $schema: _omit, ...rest } = z.toJSONSchema(schema, { unrepresentable: "any" });
@@ -161,7 +167,7 @@ function jsonSchema(schema: z.ZodType): Record<string, unknown> {
 const WORKFLOW = [
   "1. get_flashcard_format — the card format, an example of each kind, the rules, the house style.",
   "2. start_flashcard_deck — title, headline (a question), tagline, verdicts, and the levels (usually four: three open, the last hidden and timed).",
-  "3. add_flashcards — about ten cards per level, in one or more batches; ids are assigned for you.",
+  "3. add_flashcards — about ten cards per level, in one or more batches; ids are assigned for you. For a card about something you can look at, find_flashcard_images first and put the URL and credit on the card.",
   "4. publish_flashcard_deck — validates, saves the deck in this browser, and opens the quiz.",
   "Or: import_flashcards with a complete deck; or generate_flashcards to have the site's own AI write one (needs the server to have a key).",
 ];
@@ -200,6 +206,44 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
           examples: EXAMPLE_CARDS,
           schema,
         });
+      },
+    },
+
+    {
+      name: "find_flashcard_images",
+      title: "Find a picture for a card",
+      description:
+        "Licensed pictures for a card, from Wikipedia and Wikimedia Commons. Give the exact English Wikipedia article title of the thing when you know it (\"Las Meninas\", \"Hario V60\") and a search query otherwise. Returns up to five candidates with a URL sized for the card, the source page, author and license, and a ready-made credit. Put the URL in image (shown while answering — \"what is this?\" cards) or revealImage (blurred until the answer — \"who made X?\" cards), describe it in imageAlt without naming the answer, and copy credit into imageCredit. Never invent image URLs.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "What to look for, e.g. \"Bayeux Tapestry\" or \"V60 pour-over dripper\".",
+          },
+          title: {
+            type: "string",
+            description: "Exact English Wikipedia article title, when known — its lead image comes first.",
+          },
+          limit: { type: "integer", description: "At most this many candidates (1–10). Default 5." },
+        },
+        required: ["query"],
+      },
+      readOnly: true,
+      async execute(input) {
+        const { query, title, limit } = FindImagesInput.parse(input);
+        const found = await findImages(query, { title, limit });
+        if (!found.length)
+          return text(
+            `No reusable image found for "${query}". Try the exact Wikipedia title of the subject (title), a different query, or leave the card without a picture.`,
+            { candidates: [] }
+          );
+        const candidates = found.map((c) => ({ ...c, credit: creditFor(c) }));
+        const lines = candidates.map(
+          (c, i) =>
+            `${i + 1}. ${c.title}${c.author ? ` — ${c.author}` : ""} · ${c.license ?? "license unknown"} (${c.origin})\n   url: ${c.url}\n   source: ${c.source}`
+        );
+        return text(lines.join("\n"), { candidates });
       },
     },
 

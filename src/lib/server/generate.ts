@@ -7,13 +7,17 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { z } from "zod";
 import {
+  ChoiceQuestionSchema,
   DeckPlanSchema,
-  LevelCardsSchema,
+  OrderQuestionSchema,
+  TrueFalseQuestionSchema,
   type DeckPlan,
   type LevelBrief,
   type QuizQuestion,
 } from "../deck.ts";
+import { creditFor, wikipediaLeadImage } from "../image-search.ts";
 
 export const MODEL = process.env.FLASHCARDS_MODEL ?? "claude-opus-5";
 /** Thinking depth for the card-writing pass. Facts must be right, so the
@@ -22,6 +26,57 @@ const EFFORT = (process.env.FLASHCARDS_EFFORT ?? "medium") as
   | "low"
   | "medium"
   | "high";
+
+/** Pictures: the writer names the Wikipedia article of the thing a card
+ *  shows; the server fetches that article's lead image and credits it.
+ *  FLASHCARDS_IMAGES=off keeps decks text-only. */
+const IMAGES = process.env.FLASHCARDS_IMAGES !== "off";
+
+const PictureHintSchema = z.object({
+  wikipediaTitle: z
+    .string()
+    .min(1)
+    .describe("Exact English Wikipedia article title of the thing pictured"),
+  slot: z
+    .enum(["image", "revealImage"])
+    .describe(
+      "image: shown while answering (\"what is this?\" cards); revealImage: blurred until the answer (cards the picture would give away)"
+    ),
+  alt: z.string().min(1).describe("What the picture shows, without naming the answer"),
+});
+
+/** What the writer returns: cards, each optionally naming its picture. */
+const AuthoredCardsSchema = z.object({
+  questions: z
+    .array(
+      z.discriminatedUnion("kind", [
+        ChoiceQuestionSchema.extend({ picture: PictureHintSchema.optional() }),
+        TrueFalseQuestionSchema.extend({ picture: PictureHintSchema.optional() }),
+        OrderQuestionSchema,
+      ])
+    )
+    .min(1),
+});
+type AuthoredCard = z.infer<typeof AuthoredCardsSchema>["questions"][number];
+
+/** Resolve a card's picture hint to a real, credited image — or drop the
+ *  hint when the article has no reusable lead image. */
+async function attachPicture(card: AuthoredCard, id: string): Promise<QuizQuestion> {
+  if (card.kind === "order") return { ...card, id };
+  const { picture, ...rest } = card;
+  if (!picture || !IMAGES) return { ...rest, id } as QuizQuestion;
+  const found = await wikipediaLeadImage(picture.wikipediaTitle).catch(() => null);
+  if (!found) return { ...rest, id } as QuizQuestion;
+  // A true/false card's picture only ever appears with the answer.
+  const slot = rest.kind === "truefalse" ? "revealImage" : picture.slot;
+  return {
+    ...rest,
+    id,
+    [slot]: found.url,
+    imageAlt: picture.alt,
+    imageCredit: creditFor(found),
+  } as QuizQuestion;
+}
 
 /** True when the server has credentials to call Claude. */
 export function generationAvailable(): boolean {
@@ -108,7 +163,7 @@ export async function writeLevel({
   const response = await anthropic().messages.parse({
     model: MODEL,
     max_tokens: 16000,
-    output_config: { effort: EFFORT, format: zodOutputFormat(LevelCardsSchema) },
+    output_config: { effort: EFFORT, format: zodOutputFormat(AuthoredCardsSchema) },
     system: houseBrief(),
     messages: [
       {
@@ -122,7 +177,10 @@ export async function writeLevel({
           level.timed
             ? `This level is timed (${level.timerSeconds ?? plan.timerSeconds} seconds per card), so prompts must be readable at a glance.`
             : "",
-          `Mix the kinds (about six choice, two truefalse, one or two order). options[0] is the correct answer. Every card has a one-line fact. No images unless the notes list some.`,
+          `Mix the kinds (about six choice, two truefalse, one or two order). options[0] is the correct answer. Every card has a one-line fact. Don't set image or revealImage yourself unless the notes list images.`,
+          IMAGES
+            ? `Pictures: where a real picture would help a card — a work of art, a building, a species, an object, a place — set picture: { wikipediaTitle, slot, alt } with the exact English Wikipedia article title of the thing pictured; the site fetches that article's lead image and credits it. slot "image" for "what is this?" cards, "revealImage" for cards whose answer the picture would give away. Only name an article you are sure exists; leave picture out otherwise. Order cards take no picture.`
+            : "",
           avoid.length
             ? `\nAlready asked in earlier levels — do not repeat or lightly rephrase these:\n${avoid.map((a) => `- ${a}`).join("\n")}`
             : "",
@@ -133,10 +191,9 @@ export async function writeLevel({
   if (response.stop_reason === "refusal") throw new GenerationRefused();
   if (!response.parsed_output)
     throw new Error(`The ${level.name} level didn't match the card format. Try again.`);
-  return response.parsed_output.questions.map((q, i) => ({
-    ...q,
-    id: `${level.id}-${i + 1}`,
-  }));
+  return Promise.all(
+    response.parsed_output.questions.map((q, i) => attachPicture(q, `${level.id}-${i + 1}`))
+  );
 }
 
 /** The prompts a level asks, for the next level's avoid list. */

@@ -100,10 +100,37 @@ Rules the site enforces:
 - `options` has 2 to 6 entries (4 is the sweet spot); `items` has 3 to 5.
 - Question ids are unique across the whole deck; level ids are unique.
 - `passScore` can't exceed the number of questions in a level.
-- Images are optional. `image` shows sharp while answering ("which movement
-  is this?"); `revealImage` shows blurred and sharpens with the answer. Only
-  reference images you were given (a path under `/public`, like
-  `/images/starry-night.jpg`, or an https URL). Never invent an image path.
+- Pictures are optional and never invented: see below.
+
+## Pictures
+
+A picture earns its place when the card is about something you can look at:
+a work of art, a building, a species, an object, a map. Then:
+
+- **Never invent an image URL.** Use pictures you were given (a path under
+  `/public` like `/images/starry-night.jpg`, or an https URL), or — when you
+  have the site's tools — `find_flashcard_images` (in a terminal:
+  `npm run find-images -- "Las Meninas"`) for a licensed one from Wikipedia
+  or Wikimedia Commons.
+- `image` shows sharp while answering: for "what is this?" cards.
+  `revealImage` stays blurred until the answer: for "who made X?" cards, so
+  the picture can't give it away. True/false cards only take `revealImage`.
+- `imageAlt` says what the picture shows without naming the answer.
+- `imageCredit` — `{ "title", "author", "license", "source" }`, all optional —
+  is shown as a caption once the answer is revealed. Copy it from the lookup.
+
+```jsonc
+{
+  "kind": "choice",
+  "id": "c2",
+  "prompt": "Who painted Las Meninas?",
+  "revealImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Las_Meninas,_by_Diego_Vel%C3%A1zquez,_from_Prado_in_Google_Earth.jpg?width=800",
+  "imageAlt": "A Baroque court scene: a young princess with her attendants, a painter at his easel.",
+  "imageCredit": { "title": "Las Meninas", "author": "Diego Velázquez", "license": "Public domain", "source": "https://en.wikipedia.org/wiki/Las_Meninas" },
+  "options": ["Diego Velázquez", "Caravaggio", "Peter Paul Rubens", "Jacques-Louis David"],
+  "fact": "Velázquez's Las Meninas is a Baroque work (1600 – 1700)."
+}
+```
 
 ## Output
 

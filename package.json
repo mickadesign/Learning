@@ -12,7 +12,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "check-deck": "node scripts/check-deck.mts",
-    "generate": "node scripts/generate-deck.mts"
+    "generate": "node scripts/generate-deck.mts",
+    "find-images": "node scripts/find-images.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",

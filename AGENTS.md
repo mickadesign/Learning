@@ -20,9 +20,14 @@ site shuffles.
   `src/app/api/decks/` and by `scripts/generate-deck.mts`.
 - `src/lib/create-deck.ts` — the browser pipeline: plan, then levels one by
   one, saving to `src/lib/deck-store.ts` (localStorage) after each.
-- `src/lib/webmcp.ts` — ten WebMCP tools on `document.modelContext`: read
-  the format, start a draft, add cards, publish, import, generate, list,
-  get, play, delete. Drafts live in `deck-store.ts` next to saved decks.
+- `src/lib/image-search.ts` — licensed pictures from Wikipedia (an article's
+  lead image) and Wikimedia Commons (search), keyless and cross-origin.
+  Behind `npm run find-images`, the `find_flashcard_images` tool, and the
+  generator's picture step. Cards carry the credit in `imageCredit`; the
+  quiz shows it as a caption on the reveal.
+- `src/lib/webmcp.ts` — eleven WebMCP tools on `document.modelContext`: read
+  the format, find images, start a draft, add cards, publish, import,
+  generate, list, get, play, delete. Drafts live in `deck-store.ts` next to saved decks.
   The served reference is `public/agents.md` (plus `/llms.txt`); keep it in
   step with the tools and with `EXAMPLE_CARDS` / `AUTHORING_RULES` /
   `HOUSE_STYLE` in `src/lib/deck.ts`. Wiring notes: `docs/webmcp.md`.

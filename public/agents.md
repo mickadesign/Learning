@@ -23,6 +23,8 @@ the shortest path to a finished deck.
 2. `start_flashcard_deck` — title, headline (a question), tagline, verdicts,
    and the levels without cards. You get a slug back.
 3. `add_flashcards` — about ten cards per level, in one or more batches.
+   For a card about something you can look at, call `find_flashcard_images`
+   first and put its URL and credit on the card.
 4. `publish_flashcard_deck` — validates, saves, and opens the quiz.
 
 About four levels of ten cards is a complete deck; a single level of ten is
@@ -48,6 +50,18 @@ Input: none.
 Returns the workflow, the deck JSON Schema, one example card of each kind,
 the rules the site enforces, and the house style. `structuredContent`:
 `{ workflow, rules, houseStyle, examples, schema }`.
+
+### `find_flashcard_images` — read-only
+
+Input: `{ query, title?, limit? }` — what to look for; the exact English
+Wikipedia article title when you know it (its lead image comes first);
+at most `limit` candidates (default 5).
+
+Returns licensed pictures from Wikipedia and Wikimedia Commons: for each, a
+`url` sized for the card, the `source` page, `author`, `license`, and a
+ready-made `credit` to copy into the card's `imageCredit`. Non-free images
+are left out; a missing license is reported as unknown. `structuredContent`:
+`{ candidates: [{ url, width, height, title, source, author?, license?, origin, credit }] }`.
 
 ### `list_flashcard_decks` — read-only
 
@@ -97,7 +111,9 @@ more cards. A card is one of:
 
 Optional on any card: `id` (assigned as `<level>-<n>` when omitted),
 `image` (shown sharp while answering, choice only), `revealImage` (shown
-blurred until the answer; choice and truefalse), `imageAlt`.
+blurred until the answer; choice and truefalse), `imageAlt`, and
+`imageCredit` (`{ title?, author?, license?, source? }`, shown as a caption
+once the answer is revealed).
 
 Returns the level's counts by kind and what the draft still needs.
 `structuredContent`: `{ slug, level, added: string[], levels: [{ id, cards }], gaps: string[] }`.
@@ -148,7 +164,23 @@ Removes a saved deck or a draft. The built-in deck can't be deleted.
 | Answer type | `kind`: `choice`, `truefalse`, `order` | Drives the card's layout and keyboard handling. |
 | Correct answer | `options[0]`, `answer`, or `items` sorted by `value` | The site shuffles options and items itself. |
 | Answer revealed | `fact` | One line shown after answering, right or wrong. |
-| Picture | `image` or `revealImage`, plus `imageAlt` | A path under `/public` or an `https://` URL that exists. |
+| Picture | `image` or `revealImage`, plus `imageAlt` and `imageCredit` | A path under `/public` or an `https://` URL that exists. Credit shows on the reveal. |
+
+## Pictures
+
+A picture earns its place when the card is about something you can look at:
+a work of art, a building, a species, an object, a map.
+
+- Never invent an image URL. Get one from `find_flashcard_images`: give the
+  exact Wikipedia title when you can name the thing, a search query
+  otherwise. Pick the candidate whose title matches, and copy its `credit`
+  into `imageCredit`.
+- `image` shows sharp while answering: "what is this?" cards. `revealImage`
+  stays blurred until the answer: "who made X?" cards, so the picture can't
+  give it away. True/false cards only take `revealImage`.
+- `imageAlt` says what the picture shows without naming the answer.
+- Pictures are loaded from the source directly; nothing is uploaded or
+  stored here.
 
 Rules the site enforces:
 
@@ -176,6 +208,7 @@ The reference deck is an art-history quiz. Decks that feel like it:
 - Warm, precise, a little playful. Second person. No exclamation marks in
   prompts. Verdicts are flavoured by the topic.
 - Facts must be true. Prefer well-established facts over disputed trivia.
+- Pictures show real things and carry their credit.
 
 ## For developers
 

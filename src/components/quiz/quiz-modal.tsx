@@ -17,6 +17,7 @@ import {
   verdictFor,
   type ChoiceQuestion,
   type Deck,
+  type ImageCredit,
   type LevelBrief,
   type OrderItem,
   type OrderQuestion,
@@ -359,6 +360,41 @@ function TimedIntro({ seconds }: { seconds: number }) {
   );
 }
 
+/** Museum label for a card's picture: title, author, license, source.
+ *  Overlaid on the image's bottom edge so it never shifts the card, and
+ *  only once the answer is out — before that the title could give it away.
+ *  Fades in on the fact's beat (0.28s after the rows collapse). */
+function ImageCaption({ credit }: { credit?: ImageCredit }) {
+  if (!credit || !(credit.title || credit.author)) return null;
+  return (
+    <motion.p
+      initial={{ opacity: 0 }}
+      animate={{
+        opacity: 1,
+        transition: { duration: spring.moderate.duration, delay: 0.28, ease: "easeOut" },
+      }}
+      className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-3 pb-2 pt-8 text-[12px] leading-snug text-white/90"
+    >
+      {credit.title}
+      {credit.author && ` — ${credit.author}`}
+      {credit.license && ` · ${credit.license}`}
+      {credit.source && (
+        <>
+          {" · "}
+          <a
+            href={credit.source}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pointer-events-auto underline decoration-white/40 underline-offset-2 transition-colors duration-80 hover:decoration-white"
+          >
+            Source
+          </a>
+        </>
+      )}
+    </motion.p>
+  );
+}
+
 /** The X logomark — none of the icon libraries carry it, so it's inlined.
  *  Shaped as an IconComponent so Button's `leadingIcon` slot accepts it; the
  *  glyph is inset 10% to optically match the stroke icons' built-in padding. */
@@ -422,7 +458,7 @@ function ChoiceCard({
   return (
     <div className="space-y-4">
       {displayImage && (
-        <div className="aspect-[16/10] overflow-hidden rounded-[8px]">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-[8px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={displayImage}
@@ -433,6 +469,7 @@ function ChoiceCard({
               blurred ? "scale-105 blur-xl" : "scale-100 blur-0"
             )}
           />
+          {revealed && <ImageCaption credit={q.imageCredit} />}
         </div>
       )}
       <p className="text-[19px] leading-snug text-foreground">{q.prompt}</p>
@@ -528,7 +565,7 @@ function TrueFalseCard({
   return (
     <div className="space-y-4">
       {q.revealImage && (
-        <div className="aspect-[16/10] overflow-hidden rounded-[8px]">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-[8px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={q.revealImage}
@@ -539,6 +576,7 @@ function TrueFalseCard({
               blurred ? "scale-105 blur-xl" : "scale-100 blur-0"
             )}
           />
+          {revealed && <ImageCaption credit={q.imageCredit} />}
         </div>
       )}
       <p className="text-[19px] leading-snug text-foreground">{q.statement}</p>

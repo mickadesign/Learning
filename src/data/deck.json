@@ -39,7 +39,11 @@
             "Sandro Botticelli",
             "Caravaggio"
           ],
-          "fact": "The Mona Lisa is a Renaissance work — a period defined by realism, proportion, and mastery of perspective."
+          "fact": "The Mona Lisa is a Renaissance work — a period defined by realism, proportion, and mastery of perspective.",
+          "imageCredit": {
+            "title": "Mona Lisa",
+            "author": "Leonardo da Vinci"
+          }
         },
         {
           "kind": "choice",
@@ -52,7 +56,11 @@
             "Surrealism",
             "Romanticism"
           ],
-          "fact": "Van Gogh's The Starry Night is Post-Impressionist — a reaction against Impressionism (1880 – 1900)."
+          "fact": "Van Gogh's The Starry Night is Post-Impressionist — a reaction against Impressionism (1880 – 1900).",
+          "imageCredit": {
+            "title": "The Starry Night",
+            "author": "Vincent van Gogh"
+          }
         },
         {
           "kind": "truefalse",
@@ -60,7 +68,11 @@
           "statement": "The Renaissance was a period of renewed interest in classical art and humanism.",
           "answer": true,
           "revealImage": "/images/ET6ZJPhHNpYtBFEB3I5oc7ebo.png",
-          "fact": "Renaissance art (1400 – 1600) revived classical ideals through realism, proportion, and perspective."
+          "fact": "Renaissance art (1400 – 1600) revived classical ideals through realism, proportion, and perspective.",
+          "imageCredit": {
+            "title": "Sistine Chapel Ceiling",
+            "author": "Michelangelo"
+          }
         },
         {
           "kind": "choice",
@@ -73,7 +85,11 @@
             "Baroque",
             "Cubism"
           ],
-          "fact": "Impressionism (1860 – 1880): broken brushwork, vibrant colors, and a focus on the open air."
+          "fact": "Impressionism (1860 – 1880): broken brushwork, vibrant colors, and a focus on the open air.",
+          "imageCredit": {
+            "title": "Pont Neuf, Paris",
+            "author": "Pierre-Auguste Renoir"
+          }
         },
         {
           "kind": "order",
@@ -106,7 +122,11 @@
             "Street Art",
             "Bauhaus"
           ],
-          "fact": "Pop Art (1950 – 1960) embraced mass-media imagery and consumer culture, often with a sense of humor."
+          "fact": "Pop Art (1950 – 1960) embraced mass-media imagery and consumer culture, often with a sense of humor.",
+          "imageCredit": {
+            "title": "Campbell's Soup I",
+            "author": "Andy Warhol"
+          }
         },
         {
           "kind": "truefalse",
@@ -114,7 +134,11 @@
           "statement": "Surrealism explored the unconscious mind and the realm of dreams.",
           "answer": true,
           "revealImage": "/images/AOEiscChmwuOfv0BiwoHkFVia8w.png",
-          "fact": "Surrealism (1920 – 1940) leaned on illogical juxtapositions and dreamlike imagery."
+          "fact": "Surrealism (1920 – 1940) leaned on illogical juxtapositions and dreamlike imagery.",
+          "imageCredit": {
+            "title": "The Son of Man",
+            "author": "René Magritte"
+          }
         },
         {
           "kind": "choice",
@@ -127,7 +151,11 @@
             "Shepard Fairey",
             "M.CHAT"
           ],
-          "fact": "Street Art (1980 – Today) grew out of graffiti, with deep roots in urban culture."
+          "fact": "Street Art (1980 – Today) grew out of graffiti, with deep roots in urban culture.",
+          "imageCredit": {
+            "title": "Girl with Balloon",
+            "author": "Banksy"
+          }
         },
         {
           "kind": "choice",
@@ -140,7 +168,10 @@
             "Baroque",
             "Rococo"
           ],
-          "fact": "Romanesque art (1000 – 1200): rounded arches, thick walls, and religious subject matter."
+          "fact": "Romanesque art (1000 – 1200): rounded arches, thick walls, and religious subject matter.",
+          "imageCredit": {
+            "title": "Abbey of Saint-Denis in France"
+          }
         },
         {
           "kind": "choice",
@@ -153,7 +184,11 @@
             "Claude Monet",
             "Salvador Dalí"
           ],
-          "fact": "Klimt's The Kiss belongs to Art Nouveau (1890 – 1910), with its organic shapes and stylized motifs."
+          "fact": "Klimt's The Kiss belongs to Art Nouveau (1890 – 1910), with its organic shapes and stylized motifs.",
+          "imageCredit": {
+            "title": "The Kiss",
+            "author": "Gustav Klimt"
+          }
         }
       ]
     },
@@ -174,7 +209,11 @@
             "Romanticism",
             "Realism"
           ],
-          "fact": "Neoclassicism (1780 – 1830) answered Rococo with order, balance, and simplicity."
+          "fact": "Neoclassicism (1780 – 1830) answered Rococo with order, balance, and simplicity.",
+          "imageCredit": {
+            "title": "Pilgrimage to Cythera",
+            "author": "Antoine Watteau"
+          }
         },
         {
           "kind": "choice",
@@ -187,7 +226,11 @@
             "Peter Paul Rubens",
             "Jacques-Louis David"
           ],
-          "fact": "Velázquez's Las Meninas is a Baroque work (1600 – 1700)."
+          "fact": "Velázquez's Las Meninas is a Baroque work (1600 – 1700).",
+          "imageCredit": {
+            "title": "Las Meninas",
+            "author": "Diego Velázquez"
+          }
         },
         {
           "kind": "order",
@@ -215,7 +258,11 @@
           "statement": "Realism aimed to idealize its subjects.",
           "answer": false,
           "revealImage": "/images/MexmtfOJivuXCyK9m2yovCs274.png",
-          "fact": "Realism (1840 – 1880) portrayed the world as it is — everyday subjects, with idealism avoided."
+          "fact": "Realism (1840 – 1880) portrayed the world as it is — everyday subjects, with idealism avoided.",
+          "imageCredit": {
+            "title": "Gleaners",
+            "author": "Jean-François Millet"
+          }
         },
         {
           "kind": "choice",
@@ -228,7 +275,11 @@
             "Impressionism",
             "Art Nouveau"
           ],
-          "fact": "Baroque art (1600 – 1700) paired chiaroscuro with dramatic poses and emotional intensity."
+          "fact": "Baroque art (1600 – 1700) paired chiaroscuro with dramatic poses and emotional intensity.",
+          "imageCredit": {
+            "title": "The Last Supper",
+            "author": "Caravaggio"
+          }
         },
         {
           "kind": "choice",
@@ -241,7 +292,11 @@
             "Baroque",
             "Realism"
           ],
-          "fact": "David painted all three Neoclassical works on this timeline, including Napoleon at the Great St. Bernard."
+          "fact": "David painted all three Neoclassical works on this timeline, including Napoleon at the Great St. Bernard.",
+          "imageCredit": {
+            "title": "Oath of the Horatii",
+            "author": "Jacques-Louis David"
+          }
         },
         {
           "kind": "choice",
@@ -254,7 +309,11 @@
             "Minimalism",
             "Conceptual Art"
           ],
-          "fact": "The Bauhaus (1919 – 1938) put design at the center of daily life, free of unnecessary ornamentation."
+          "fact": "The Bauhaus (1919 – 1938) put design at the center of daily life, free of unnecessary ornamentation.",
+          "imageCredit": {
+            "title": "Composition",
+            "author": "László Moholy-Nagy"
+          }
         },
         {
           "kind": "truefalse",
@@ -262,7 +321,11 @@
           "statement": "On this timeline, Impressionism begins before Realism.",
           "answer": false,
           "revealImage": "/images/Bv3WlKyMrgj7ejC1zU2V2ZKiA.png",
-          "fact": "Realism starts in 1840; Impressionism follows in 1860."
+          "fact": "Realism starts in 1840; Impressionism follows in 1860.",
+          "imageCredit": {
+            "title": "Water Lilies and Japanese Bridge",
+            "author": "Claude Monet"
+          }
         },
         {
           "kind": "choice",
@@ -275,7 +338,11 @@
             "Kay Sage",
             "Pablo Picasso"
           ],
-          "fact": "Dalí's melting clocks are Surrealism at its purest (1920 – 1940)."
+          "fact": "Dalí's melting clocks are Surrealism at its purest (1920 – 1940).",
+          "imageCredit": {
+            "title": "The Persistence of Memory",
+            "author": "Salvador Dalí"
+          }
         },
         {
           "kind": "choice",
@@ -288,7 +355,11 @@
             "Post-Impressionism",
             "Contemporary Art"
           ],
-          "fact": "Art Nouveau (1890 – 1910) is a decorative and flowing style."
+          "fact": "Art Nouveau (1890 – 1910) is a decorative and flowing style.",
+          "imageCredit": {
+            "title": "Language of Flowers",
+            "author": "Alphonse Mucha"
+          }
         }
       ]
     },
@@ -309,7 +380,11 @@
             "1914",
             "1919"
           ],
-          "fact": "Cubism runs 1907 – 1914: multiple perspectives and fragmented geometric forms."
+          "fact": "Cubism runs 1907 – 1914: multiple perspectives and fragmented geometric forms.",
+          "imageCredit": {
+            "title": "Seated Woman",
+            "author": "Juan Gris"
+          }
         },
         {
           "kind": "choice",
@@ -322,7 +397,11 @@
             "Claude Monet",
             "Vincent van Gogh"
           ],
-          "fact": "Signac sits in Post-Impressionism (1880 – 1900), alongside Seurat's pointillism."
+          "fact": "Signac sits in Post-Impressionism (1880 – 1900), alongside Seurat's pointillism.",
+          "imageCredit": {
+            "title": "The Port at Sunset, Opus 236 (Saint-Tropez)",
+            "author": "Paul Signac"
+          }
         },
         {
           "kind": "order",
@@ -350,7 +429,11 @@
           "statement": "Kay Sage's Margin of Silence is a Surrealist work.",
           "answer": true,
           "revealImage": "/images/JCQTfYDLjDwbeMFYdkMAXf1t5Ck.png",
-          "fact": "Sage hangs alongside Magritte and Dalí in Surrealism (1920 – 1940)."
+          "fact": "Sage hangs alongside Magritte and Dalí in Surrealism (1920 – 1940).",
+          "imageCredit": {
+            "title": "Margin of Silence",
+            "author": "Kay Sage"
+          }
         },
         {
           "kind": "choice",
@@ -363,7 +446,11 @@
             "Cubism",
             "Contemporary Art"
           ],
-          "fact": "Post-Impressionism (1880 – 1900) was less one style than a laboratory of styles."
+          "fact": "Post-Impressionism (1880 – 1900) was less one style than a laboratory of styles.",
+          "imageCredit": {
+            "title": "Study for \"A Sunday on La Grande Jatte\"",
+            "author": "Georges Seurat"
+          }
         },
         {
           "kind": "choice",
@@ -376,7 +463,11 @@
             "Alexandre-Gabriel Decamps",
             "Édouard Manet"
           ],
-          "fact": "Aivazovsky's seascape carries Romanticism's love of drama and the sublime (1800 – 1850)."
+          "fact": "Aivazovsky's seascape carries Romanticism's love of drama and the sublime (1800 – 1850).",
+          "imageCredit": {
+            "title": "The Ninth Wave",
+            "author": "Hovhannes Aivazovsky"
+          }
         },
         {
           "kind": "choice",
@@ -389,7 +480,11 @@
             "Postmodernism",
             "Conceptual Art"
           ],
-          "fact": "The B5 embodies the Bauhaus fusion of craft and industry (1919 – 1938)."
+          "fact": "The B5 embodies the Bauhaus fusion of craft and industry (1919 – 1938).",
+          "imageCredit": {
+            "title": "B5",
+            "author": "Marcel Breuer"
+          }
         },
         {
           "kind": "truefalse",
@@ -397,7 +492,11 @@
           "statement": "Minimalism begins in the same year Pop Art ends.",
           "answer": true,
           "revealImage": "/images/KhulLVj2mgaqnVjTV55pim4aaM.png",
-          "fact": "Pop Art closes in 1960 exactly as Minimalism opens (1960 – 1970)."
+          "fact": "Pop Art closes in 1960 exactly as Minimalism opens (1960 – 1970).",
+          "imageCredit": {
+            "title": "Harran II",
+            "author": "Frank Stella"
+          }
         },
         {
           "kind": "choice",
@@ -410,7 +509,11 @@
             "Postmodernism",
             "Minimalism"
           ],
-          "fact": "Contemporary Art (1980 – Today) spans the breadth of today's globalized practice."
+          "fact": "Contemporary Art (1980 – Today) spans the breadth of today's globalized practice.",
+          "imageCredit": {
+            "title": "Urban Light",
+            "author": "Chris Burden"
+          }
         },
         {
           "kind": "choice",
@@ -423,7 +526,11 @@
             "1800 – 1850",
             "1840 – 1880"
           ],
-          "fact": "Neoclassicism: 1780 – 1830, wedged between Rococo and Romanticism."
+          "fact": "Neoclassicism: 1780 – 1830, wedged between Rococo and Romanticism.",
+          "imageCredit": {
+            "title": "The Coronation of the Emperor and Empress",
+            "author": "Jacques-Louis David"
+          }
         }
       ]
     },
@@ -446,7 +553,11 @@
             "Jean-François Millet",
             "Pierre-Auguste Renoir"
           ],
-          "fact": "Manet hangs twice: The Old Musician in Realism, Luncheon on the Grass in Impressionism."
+          "fact": "Manet hangs twice: The Old Musician in Realism, Luncheon on the Grass in Impressionism.",
+          "imageCredit": {
+            "title": "Luncheon on the Grass",
+            "author": "Édouard Manet"
+          }
         },
         {
           "kind": "truefalse",
@@ -454,7 +565,11 @@
           "statement": "The Triumph of Venus is by Sandro Botticelli.",
           "answer": false,
           "revealImage": "/images/TuW6z49pusKMZHbGUWl40k3lyig.png",
-          "fact": "François Boucher painted The Triumph of Venus (Rococo); Botticelli's is The Birth of Venus."
+          "fact": "François Boucher painted The Triumph of Venus (Rococo); Botticelli's is The Birth of Venus.",
+          "imageCredit": {
+            "title": "The Triumph of Venus",
+            "author": "François Boucher"
+          }
         },
         {
           "kind": "choice",
@@ -467,7 +582,10 @@
             "Baroque",
             "Romanticism"
           ],
-          "fact": "The Bayeux Tapestry opens the timeline with Romanesque (1000 – 1200)."
+          "fact": "The Bayeux Tapestry opens the timeline with Romanesque (1000 – 1200).",
+          "imageCredit": {
+            "title": "Bayeux Tapestry"
+          }
         },
         {
           "kind": "order",
@@ -500,7 +618,11 @@
             "Surrealism",
             "Minimalism"
           ],
-          "fact": "The Bauhaus school years bound the movement precisely: 1919 – 1938."
+          "fact": "The Bauhaus school years bound the movement precisely: 1919 – 1938.",
+          "imageCredit": {
+            "title": "Composition",
+            "author": "László Moholy-Nagy"
+          }
         },
         {
           "kind": "choice",
@@ -513,7 +635,11 @@
             "Conceptual Art",
             "Street Art"
           ],
-          "fact": "Sherman's ironic self-staging belongs to Postmodernism (1965 – Today)."
+          "fact": "Sherman's ironic self-staging belongs to Postmodernism (1965 – Today).",
+          "imageCredit": {
+            "title": "Untitled Film Still #21",
+            "author": "Cindy Sherman"
+          }
         },
         {
           "kind": "truefalse",
@@ -521,7 +647,11 @@
           "statement": "Exactly three movements on the timeline run to “Today”.",
           "answer": false,
           "revealImage": "/images/dXvqzBrO5g5ttGg9VgjWS0YShYs.png",
-          "fact": "Four do: Conceptual Art, Postmodernism, Street Art, and Contemporary Art."
+          "fact": "Four do: Conceptual Art, Postmodernism, Street Art, and Contemporary Art.",
+          "imageCredit": {
+            "title": "One and Three Chairs",
+            "author": "Joseph Kosuth"
+          }
         },
         {
           "kind": "choice",
@@ -534,7 +664,11 @@
             "Marcel Breuer",
             "Juan Gris"
           ],
-          "fact": "Schmidt's stage design sits in the Bauhaus alongside Breuer's B5 and Moholy-Nagy's Composition."
+          "fact": "Schmidt's stage design sits in the Bauhaus alongside Breuer's B5 and Moholy-Nagy's Composition.",
+          "imageCredit": {
+            "title": "Mechanical Stage Design",
+            "author": "Joost Schmidt"
+          }
         },
         {
           "kind": "choice",
@@ -547,7 +681,11 @@
             "Post-Impressionism",
             "Romanticism"
           ],
-          "fact": "The Old Musician sits in Realism (1840 – 1880), before Manet's Impressionist entry."
+          "fact": "The Old Musician sits in Realism (1840 – 1880), before Manet's Impressionist entry.",
+          "imageCredit": {
+            "title": "The Old Musician",
+            "author": "Édouard Manet"
+          }
         },
         {
           "kind": "choice",
@@ -560,7 +698,11 @@
             "Realism",
             "Baroque"
           ],
-          "fact": "Neoclassicism (1780 – 1830) answers Rococo the year it closes."
+          "fact": "Neoclassicism (1780 – 1830) answers Rococo the year it closes.",
+          "imageCredit": {
+            "title": "Napoleon at the Great St. Bernard",
+            "author": "Jacques-Louis David"
+          }
         }
       ]
     }

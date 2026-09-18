@@ -19,6 +19,7 @@ agents", and the `<head>` carries
 | Tool | Purpose |
 | --- | --- |
 | `get_flashcard_format` | Read first: workflow, JSON Schema, example cards, rules, house style. |
+| `find_flashcard_images` | Licensed pictures from Wikipedia / Commons, with a ready-made credit. |
 | `list_flashcard_decks` | Built-in and saved decks with best scores, plus drafts. |
 | `get_flashcard_deck` | Full JSON of a deck or draft. |
 | `start_flashcard_deck` | Begin a draft: metadata and levels without cards. |
@@ -40,6 +41,10 @@ agents", and the `<head>` carries
   `add_flashcards`, `import_flashcards`) are derived at runtime from the zod
   schemas in `src/lib/deck.ts`, so the tools and the site can never disagree
   about the format. Every input is re-validated with zod inside the tool.
+- `find_flashcard_images` runs `src/lib/image-search.ts` in the browser:
+  the Wikipedia page-summary endpoint (an article's lead image) and the
+  Commons search API, both keyless and cross-origin. The same module serves
+  the CLI (`npm run find-images`) and the server generator.
 - `@mcp-b/global` is imported lazily in the browser. It wraps the native API
   when present and installs a polyfill otherwise.
 - Example cards, the rules and the house style live in `src/lib/deck.ts`

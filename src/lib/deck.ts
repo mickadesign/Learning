@@ -15,6 +15,18 @@ const imagePath = z
     "Path under /public (e.g. /images/starry-night.jpg) or an absolute https URL"
   );
 
+/** Where a picture comes from, shown as a caption once the answer is
+ *  revealed (never before: the title would give the answer away). */
+export const ImageCreditSchema = z
+  .object({
+    title: z.string().min(1).describe("The work or subject, e.g. \"Las Meninas\""),
+    author: z.string().min(1).describe("Artist or photographer"),
+    license: z.string().min(1).describe("e.g. \"Public domain\", \"CC BY-SA 4.0\""),
+    source: z.string().url().describe("Page the image came from"),
+  })
+  .partial();
+export type ImageCredit = z.infer<typeof ImageCreditSchema>;
+
 const QuestionBase = {
   id: z.string().min(1).describe("Unique across the whole deck, e.g. s1, s2"),
   fact: z
@@ -40,7 +52,8 @@ export const ChoiceQuestionSchema = z.object({
   revealImage: imagePath
     .optional()
     .describe("Shown blurred while answering, sharpened with the answer"),
-  imageAlt: z.string().optional(),
+  imageAlt: z.string().optional().describe("What the picture shows, without naming the answer"),
+  imageCredit: ImageCreditSchema.optional(),
 });
 
 export const TrueFalseQuestionSchema = z.object({
@@ -51,7 +64,8 @@ export const TrueFalseQuestionSchema = z.object({
   revealImage: imagePath
     .optional()
     .describe("Shown blurred while answering, sharpened on the reveal"),
-  imageAlt: z.string().optional(),
+  imageAlt: z.string().optional().describe("What the picture shows, without naming the answer"),
+  imageCredit: ImageCreditSchema.optional(),
 });
 
 export const OrderItemSchema = z.object({
@@ -242,6 +256,22 @@ export const EXAMPLE_CARDS: QuizQuestion[] = [
     fact: "Realism (1840 – 1880) portrayed the world as it is — everyday subjects, with idealism avoided.",
   },
   {
+    kind: "choice",
+    id: "example-4",
+    prompt: "Who painted Las Meninas?",
+    revealImage:
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Las_Meninas,_by_Diego_Vel%C3%A1zquez,_from_Prado_in_Google_Earth.jpg?width=800",
+    imageAlt: "A Baroque court scene: a young princess with her attendants, a painter at his easel.",
+    imageCredit: {
+      title: "Las Meninas",
+      author: "Diego Velázquez",
+      license: "Public domain",
+      source: "https://en.wikipedia.org/wiki/Las_Meninas",
+    },
+    options: ["Diego Velázquez", "Caravaggio", "Peter Paul Rubens", "Jacques-Louis David"],
+    fact: "Velázquez's Las Meninas is a Baroque work (1600 – 1700).",
+  },
+  {
     kind: "order",
     id: "example-3",
     prompt: "Tap these movements in order, earliest first.",
@@ -261,7 +291,7 @@ export const AUTHORING_RULES = [
   "Every card has a fact: one line shown after answering, right or wrong, that adds something.",
   "Question ids are unique across the deck (omit them when adding cards and they are assigned).",
   "passScore can't exceed a level's card count; the reference deck uses 10 cards per level and passes at 7.",
-  "Images are optional: image shows sharp while answering, revealImage blurred until the answer. Only use URLs or paths that exist.",
+  "Pictures are optional and never invented: find them with find_flashcard_images (Wikipedia / Wikimedia Commons, licensed) and copy its credit into imageCredit. image shows sharp while answering (\"what is this?\" cards); revealImage stays blurred until the answer (\"who made X?\" cards, so the picture can't spoil it). imageAlt describes the picture without naming the answer.",
   "Level ids and the deck slug are lowercase letters, digits and dashes.",
 ];
 

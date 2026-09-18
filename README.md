@@ -24,7 +24,11 @@ Built with **Next.js 16 (App Router)**, **Tailwind CSS 4**, and
   it, with a hidden bonus level on a shorter clock.
 - **Three card kinds**: multiple choice, true/false, and tap-to-order.
 - **Illustrated cards**: an image shown sharp with the question, or blurred
-  and revealed with the answer.
+  and revealed with the answer, with a museum-label credit on the reveal.
+  Pictures come from Wikipedia and Wikimedia Commons — licensed, credited,
+  no key — through `npm run find-images`, the `find_flashcard_images` tool
+  for agents, and the generator, which attaches an article's lead image to
+  cards that show a real thing.
 - **Timed levels** with a countdown ring and an odometer briefing screen.
 - **Keyboard play** on desktop (digits answer, Enter advances), touch-tuned on
   phones.
@@ -135,6 +139,7 @@ zero config, or anywhere that runs `next start`. Environment variables:
 | `ANTHROPIC_API_KEY` | Enables deck generation (in-site, WebMCP, and the CLI). Without it the site plays the built-in deck and says so. |
 | `FLASHCARDS_MODEL` | Which Claude model writes decks. Default `claude-opus-5`. |
 | `FLASHCARDS_EFFORT` | Thinking depth for the cards: `low`, `medium` (default), `high`. |
+| `FLASHCARDS_IMAGES` | `off` keeps generated decks text-only (default: attach Wikipedia lead images). |
 | `NEXT_PUBLIC_SITE_URL` | Absolute site URL for the share cards' image URLs on hosts other than Vercel. |
 
 ## Project layout
@@ -177,6 +182,7 @@ npm run dev          # start the dev server
 npm run build        # production build (type-check + lint + prerender)
 npm run check-deck   # validate src/data/deck.json (or any file you pass)
 npm run generate     # write a deck with Claude: npm run generate -- "<topic>"
+npm run find-images  # licensed pictures for a card: npm run find-images -- "<query>"
 npm run typecheck    # tsc
 npm run lint         # eslint
 ```

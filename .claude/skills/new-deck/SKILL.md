@@ -19,6 +19,12 @@ zod schema in `src/lib/deck.ts`. Writing a deck means writing that file.
    `public/images/` and reference them as `/images/<file>`.
 4. Write the deck. `options[0]` is always the correct answer. Question ids are
    unique across the deck. Facts are true and one line long.
-5. Run `npm run check-deck` and fix every error and warning it prints.
-6. Tell the user what you wrote (levels, card counts, anything you were unsure
+5. Pictures: for cards about something you can look at, run
+   `npm run find-images -- "<the thing>" --json` (add `--title` with the
+   exact Wikipedia title when you know it), put the chosen URL in `image`
+   ("what is this?") or `revealImage` ("who made X?"), write an `imageAlt`
+   that doesn't name the answer, and copy the `credit` into `imageCredit`.
+   Never invent an image URL.
+6. Run `npm run check-deck` and fix every error and warning it prints.
+7. Tell the user what you wrote (levels, card counts, anything you were unsure
    about factually) and that `npm run dev` plays it.
