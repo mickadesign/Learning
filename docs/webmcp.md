@@ -64,6 +64,12 @@ same reason — script tools cap and screen large page-derived text.
   does: the article's lead image goes in the slot with alt and credit; a
   hint with no free image is dropped and named in the result. The add
   result also counts the level's cards still without a picture.
+- Agent presence: every tool call is noted in a small store in `webmcp.ts`
+  (`useAgentActivity`), and publish/import mark the deck done. The home
+  screen's status line follows it ("Your agent is writing cards…"), falls
+  back after 90 s of silence, and shows "Waiting for its first move" when
+  the page was opened at `/?agent`, which is where the copied agent prompt
+  sends the agent.
 - `@mcp-b/global` is imported lazily in the browser. It wraps the native API
   when present and installs a polyfill otherwise.
 - Example cards, the rules and the house style live in `src/lib/deck.ts`

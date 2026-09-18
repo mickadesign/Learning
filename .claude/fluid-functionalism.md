@@ -21,7 +21,10 @@
   scroll-area, fluid-hover-highlight, use-fluid-hover, use-merge-split,
   use-keyboard-nav-gate, elevated, popup, size-context), springs,
   font-weight, icon-context, surface-context/surface-classes,
-  use-touch-primary
+  use-touch-primary, thinking-indicator (single-source; its install also
+  added the `shimmer` keyframes + `.shimmer-text` to globals.css — kept —
+  and tried to rewrite utils.ts to the `cn` package and retune
+  font-weight's semibold opsz — both reverted)
 - icon-context + shape-context are the Art Timeline versions (icon-map with
   five libraries, pill default); the combobox install's newer copies were
   reverted, keeping only the `variant` field and `--shape-input-radius`

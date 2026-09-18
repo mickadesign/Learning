@@ -1,16 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { DECK } from "@/data";
 import type { Deck } from "@/lib/deck";
 import { buildDeck, GenerationUnavailable, type DeckBuild } from "@/lib/create-deck";
 import { bestScoresFor, useSavedDecks } from "@/lib/deck-store";
-import { useWebMcpTools, type DeckSummary } from "@/lib/webmcp";
+import { useAgentActivity, useWebMcpTools, type DeckSummary } from "@/lib/webmcp";
 import { REPO_URL } from "@/lib/site";
 import { spring } from "@/lib/springs";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ThinkingIndicator } from "@/components/ui/thinking-indicator";
+import { Confetti } from "@/components/quiz/confetti";
 import { AgentPromptButton } from "@/components/agent-prompt-button";
 import { QuizModal } from "@/components/quiz/quiz-modal";
 import { TopicCombobox } from "@/components/topic-combobox";
@@ -63,6 +65,24 @@ function statusLine(build: DeckBuild): string {
       return build.status.message;
   }
 }
+
+/** What the status line says an agent is doing, by the tool it last called. */
+const AGENT_VERBS: Record<string, string> = {
+  get_flashcard_format: "reading the format",
+  find_flashcard_images: "finding pictures",
+  list_flashcard_decks: "looking at the decks",
+  get_flashcard_deck: "reading your deck",
+  start_flashcard_deck: "starting your deck",
+  add_flashcards: "writing cards",
+  publish_flashcard_deck: "publishing your deck",
+  import_flashcards: "importing a deck",
+  generate_flashcards: "asking the site to write a deck",
+  play_flashcards: "opening a deck",
+  delete_flashcard_deck: "removing a deck",
+};
+
+/** An agent that stops calling tools shouldn't leave a spinner behind. */
+const AGENT_QUIET_MS = 90_000;
 
 /** The landing: one question, a combobox to answer it, and the quiz. Every
  *  deck — the built-in one and the ones written here — plays in the same
@@ -196,6 +216,45 @@ export function HomeScreen() {
 
   useWebMcpTools({ generateDeck, openDeck, playDeck, listDecks, findDeck, deleteDeck });
 
+  // The agent prompt sends its agent to /?agent, so the page can acknowledge
+  // the agent as soon as it lands — before its first tool call — and then
+  // follow along call by call until the deck is published.
+  const agentExpected = useSyncExternalStore(
+    () => () => {},
+    () => new URLSearchParams(window.location.search).has("agent"),
+    () => false
+  );
+  const activity = useAgentActivity();
+  // Quiet detection without resetting state: the timer records which call
+  // it timed out on, and a new call (a new `at`) is never equal to it.
+  const [quietAt, setQuietAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (activity.phase !== "working") return;
+    const id = setTimeout(() => setQuietAt(activity.at), AGENT_QUIET_MS);
+    return () => clearTimeout(id);
+  }, [activity]);
+  const agentQuiet = activity.phase === "working" && quietAt === activity.at;
+  const agentState: "expected" | "working" | "quiet" | "done" | null =
+    activity.phase === "working"
+      ? agentQuiet
+        ? "quiet"
+        : "working"
+      : activity.phase === "done"
+        ? "done"
+        : agentExpected
+          ? "expected"
+          : null;
+  // The headline follows the work: what is being created while the agent
+  // writes, what is ready once it has published.
+  const headline =
+    agentState === "working" && activity.phase === "working"
+      ? activity.title
+        ? `Creating flashcards for ${activity.title}…`
+        : "Creating your flashcards…"
+      : agentState === "done" && activity.phase === "done"
+        ? `Flashcards for ${activity.deck.title} are ready.`
+        : "What topic are you interested in learning?";
+
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-surface-1 px-6">
       <BackdropGrid />
@@ -206,10 +265,25 @@ export function HomeScreen() {
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 w-full max-w-[440px] py-24"
       >
+        {/* A published deck gets the quiz's confetti here too, bursting from
+            the headline that just changed. Keyed on the publish so a second
+            deck replays it. */}
+        {agentState === "done" && activity.phase === "done" && (
+          <Confetti key={activity.at} className="-inset-x-6 inset-y-0" originY="34%" />
+        )}
         <p className="text-[15px] text-muted-foreground">Flashcards</p>
-        <h1 className="mt-3 font-heading text-[52px] leading-none text-foreground">
-          What topic are you interested in learning?
-        </h1>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.h1
+            key={headline}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, transition: { duration: spring.moderate.exit.duration } }}
+            transition={{ duration: spring.slow.duration, ease: "easeOut" }}
+            className="mt-3 font-heading text-[52px] leading-none text-foreground"
+          >
+            {headline}
+          </motion.h1>
+        </AnimatePresence>
 
         {/* The field sits flush with the text column: -mx offsets its own
             horizontal padding so the placeholder aligns with the headline. */}
@@ -229,7 +303,13 @@ export function HomeScreen() {
             deployment can do. */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={build ? `${build.status.phase}-${build.status.phase === "writing" ? build.status.index : ""}` : `idle-${canCreate}`}
+            key={
+              build
+                ? `${build.status.phase}-${build.status.phase === "writing" ? build.status.index : ""}`
+                : agentState
+                  ? `agent-${agentState}-${activity.phase === "working" ? activity.tool : ""}`
+                  : `idle-${canCreate}`
+            }
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, transition: { duration: spring.fast.exit.duration } }}
@@ -248,6 +328,34 @@ export function HomeScreen() {
                     size="sm"
                     className="ml-auto shrink-0 rounded-full"
                     onClick={() => openDeck(build.deck!)}
+                  >
+                    Play
+                  </Button>
+                )}
+              </>
+            ) : agentState === "expected" ? (
+              <>
+                <ThinkingIndicator size="compact" className="-my-2 -ml-3" />
+                <span>Your agent is on this page. Waiting for its first move…</span>
+              </>
+            ) : agentState === "working" && activity.phase === "working" ? (
+              <>
+                <ThinkingIndicator size="compact" className="-my-2 -ml-3" />
+                <span>
+                  Your agent is {AGENT_VERBS[activity.tool] ?? "working on this page"}…
+                </span>
+              </>
+            ) : agentState === "quiet" ? (
+              <span>Your agent has gone quiet. Nudge it, or pick a deck.</span>
+            ) : agentState === "done" && activity.phase === "done" ? (
+              <>
+                <span>“{activity.deck.title}” is ready.</span>
+                {!quizOpen && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="ml-auto shrink-0 rounded-full"
+                    onClick={() => openDeck(activity.deck)}
                   >
                     Play
                   </Button>

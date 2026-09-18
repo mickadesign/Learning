@@ -10,7 +10,7 @@
 // a polyfill otherwise, so the tools exist everywhere; it is loaded lazily
 // because it only means anything in a browser.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { CallToolResult, ModelContext } from "@mcp-b/webmcp-types";
 import { z } from "zod";
 import {
@@ -181,6 +181,62 @@ interface ToolDef {
   inputSchema: Record<string, unknown>;
   readOnly?: boolean;
   execute: (input: unknown) => Promise<CallToolResult>;
+}
+
+// ── Agent presence ──────────────────────────────────────────
+// The page's only window into an agent at work is the tool calls it makes.
+// Each call is noted here so the home screen can acknowledge it ("your
+// agent is writing cards…") instead of sitting still until the quiz opens.
+
+export type AgentActivity =
+  | { phase: "idle" }
+  /** `title` is the draft being written, once a call has named it. */
+  | { phase: "working"; tool: string; at: number; title?: string }
+  | { phase: "done"; deck: Deck; at: number };
+
+const IDLE: AgentActivity = { phase: "idle" };
+let activity: AgentActivity = IDLE;
+const activityListeners = new Set<() => void>();
+
+function setActivity(next: AgentActivity) {
+  activity = next;
+  activityListeners.forEach((l) => l());
+}
+
+function subscribeActivity(listener: () => void) {
+  activityListeners.add(listener);
+  return () => {
+    activityListeners.delete(listener);
+  };
+}
+
+/** What the agent on this page is doing, as of its last tool call. */
+export function useAgentActivity(): AgentActivity {
+  return useSyncExternalStore(subscribeActivity, () => activity, () => IDLE);
+}
+
+/** A call is under way. The draft's title sticks from call to call once a
+ *  tool has named it; tools that hold the draft pass it in, so a reload
+ *  between calls picks it up again. */
+function noteWorking(tool: string, title?: string) {
+  setActivity({
+    phase: "working",
+    tool,
+    at: Date.now(),
+    title: title ?? (activity.phase === "working" ? activity.title : undefined),
+  });
+}
+
+/** Note a call before the tool runs. Publish and import mark the deck done
+ *  themselves, once it is saved. */
+function withActivity(def: ToolDef): ToolDef {
+  return {
+    ...def,
+    async execute(input) {
+      noteWorking(def.name);
+      return def.execute(input);
+    },
+  };
 }
 
 const SlugInput = z.object({ slug: z.string().min(1) });
@@ -380,6 +436,7 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
           levels: start.levels.map((l) => ({ ...l, questions: [] })),
         };
         saveDraft(draft);
+        noteWorking("start_flashcard_deck", draft.title);
         const levels = draft.levels.map((l) => `"${l.id}" (${l.name})`).join(", ");
         return text(
           `Draft "${draft.title}" started as ${slug} with levels ${levels}. Next: add_flashcards for each level — about 10 cards each, mixing choice, truefalse and order — then publish_flashcard_deck. passScore is ${draft.passScore}, so every level needs at least that many cards.`,
@@ -408,6 +465,7 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
           throw new Error(
             `No level "${levelId}" in draft ${slug}. Levels: ${draft.levels.map((l) => l.id).join(", ")}.`
           );
+        noteWorking("add_flashcards", draft.title);
         const taken = new Set(draft.levels.flatMap((l) => l.questions.map((q) => q.id)));
         let n = level.questions.length;
         const added: (CardInput & { id: string })[] = [];
@@ -496,12 +554,14 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
         const { slug, open } = PublishInput.parse(input);
         const draft = getDraft(slug);
         if (!draft) throw new Error(`No draft "${slug}". list_flashcard_decks shows drafts.`);
+        noteWorking("publish_flashcard_deck", draft.title);
         const gaps = draftGaps(draft);
         if (gaps.length) throw new Error(`Not ready to publish: ${gaps.join("; ")}.`);
         const deck = parseDeck(draft);
         saveDeck(deck);
         removeDraft(slug);
         if (open) h().openDeck(deck);
+        setActivity({ phase: "done", deck, at: Date.now() });
         const total = deck.levels.reduce((sum, l) => sum + l.questions.length, 0);
         return text(
           `Published "${deck.title}" (${slug}): ${deck.levels.length} levels, ${total} cards.${open ? " The quiz is open on it." : ""}`,
@@ -537,6 +597,7 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
         const deck = { ...parsed, slug };
         saveDeck(deck);
         h().openDeck(deck);
+        setActivity({ phase: "done", deck, at: Date.now() });
         return text(
           `Imported and opened "${deck.title}" (${slug}).${
             missing.length ? ` No free image for ${missing.map((t) => `"${t}"`).join(", ")}; those cards have no picture.` : ""
@@ -680,7 +741,7 @@ export function useWebMcpTools(handlers: FlashcardToolHandlers) {
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
-    const defs = tools(() => ref.current);
+    const defs = tools(() => ref.current).map(withActivity);
     // The page helper first: it needs nothing loaded and works even if the
     // WebMCP runtime fails to.
     const uninstall = installPageHelper(defs);
