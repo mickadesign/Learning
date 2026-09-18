@@ -32,6 +32,9 @@ site shuffles.
 - `src/components/quiz/quiz-modal.tsx` — the whole quiz: level list, three
   card kinds (choice, true/false, order), countdown ring, results, share. It
   is a faithful port of the Art Timeline quiz; keep its motion and copy.
+- `src/components/agent-prompt-button.tsx` — the "Copy agent prompt" pill
+  shown when the server has no key (copy + open in Claude / Codex / Cursor);
+  the brief is `src/lib/agent-prompt.ts`, the marks `agent-marks.tsx`.
 - `src/components/home-screen.tsx` — the landing page: the topic combobox
   (`topic-combobox.tsx`, Fluid Functionalism `base/combobox`, borderless),
   generation status, and the modal. The modal takes the deck as a prop and

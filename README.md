@@ -64,6 +64,12 @@ four level briefs; `POST /api/decks/level` writes ten cards per level, one
 request each, so the first level is playable while the others arrive. Decks
 land in `localStorage` and show up in the combobox next time.
 
+Without a key, the landing page shows **Copy agent prompt** instead: one
+click copies a brief for your own AI agent (or opens it in Claude, Codex, or
+Cursor). The agent opens this page, asks what you want to learn, writes your
+first ten cards through the WebMCP tools, and iterates with you from there.
+The brief lives in `src/lib/agent-prompt.ts`.
+
 An agent on the page doesn't need the UI or the key: it can write the deck
 itself through the WebMCP tools — `start_flashcard_deck`, `add_flashcards`,
 `publish_flashcard_deck` — and read everything it needs from

@@ -11,6 +11,7 @@ import { REPO_URL } from "@/lib/site";
 import { spring } from "@/lib/springs";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { AgentPromptButton } from "@/components/agent-prompt-button";
 import { QuizModal } from "@/components/quiz/quiz-modal";
 import { TopicCombobox } from "@/components/topic-combobox";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -256,10 +257,15 @@ export function HomeScreen() {
                 )}
               </>
             ) : canCreate === false ? (
-              <span>
-                Pick a deck to play. Writing new ones needs an{" "}
-                <code className="text-[13px]">ANTHROPIC_API_KEY</code> on the server.
-              </span>
+              // No key on this server: hand the job to the visitor's own
+              // agent. The prompt sends it here to use the WebMCP tools.
+              <div className="flex flex-col items-start gap-3">
+                <AgentPromptButton />
+                <span>
+                  Paste it into your AI agent: it opens this page, asks what
+                  you want to learn, and writes your first ten cards.
+                </span>
+              </div>
             ) : (
               <span>
                 Pick a deck, or type anything: four levels of ten cards, written
