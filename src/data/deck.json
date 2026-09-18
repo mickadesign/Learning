@@ -1,0 +1,568 @@
+{
+  "slug": "art-timeline",
+  "title": "Art Timeline",
+  "headline": "Are you an Art connoisseur?",
+  "tagline": "One timeline and a few art movements.",
+  "intro": [
+    "I've often found it challenging to easily understand the different art movements.",
+    "Which came first? Who are the key artists? What are their main works?",
+    "This quiz is my own attempt to remember these. I hope it will be useful for your own artistic explorations too."
+  ],
+  "cta": "Test knowledge",
+  "author": {
+    "name": "@micka_design",
+    "url": "https://x.com/micka_design"
+  },
+  "passScore": 7,
+  "timerSeconds": 20,
+  "verdicts": {
+    "low": "A first gallery visit — wander the timeline a little longer.",
+    "mid": "A developing eye — the outlines are there.",
+    "high": "A trained eye — the collection is in good hands.",
+    "perfect": "Museum-grade mastery."
+  },
+  "levels": [
+    {
+      "id": "student",
+      "name": "Student",
+      "tagline": "Famous names and masterpieces.",
+      "timed": false,
+      "questions": [
+        {
+          "kind": "choice",
+          "id": "s1",
+          "prompt": "Who painted the Mona Lisa?",
+          "revealImage": "/images/jfszhHRe2XjCoOdp9NwygHkEx4k.png",
+          "options": [
+            "Leonardo da Vinci",
+            "Michelangelo",
+            "Sandro Botticelli",
+            "Caravaggio"
+          ],
+          "fact": "The Mona Lisa is a Renaissance work — a period defined by realism, proportion, and mastery of perspective."
+        },
+        {
+          "kind": "choice",
+          "id": "s2",
+          "prompt": "The Starry Night belongs to which movement?",
+          "image": "/images/oD7sywyaLRVRE8ocCeCBBE5dPdk.png",
+          "options": [
+            "Post-Impressionism",
+            "Impressionism",
+            "Surrealism",
+            "Romanticism"
+          ],
+          "fact": "Van Gogh's The Starry Night is Post-Impressionist — a reaction against Impressionism (1880 – 1900)."
+        },
+        {
+          "kind": "truefalse",
+          "id": "s3",
+          "statement": "The Renaissance was a period of renewed interest in classical art and humanism.",
+          "answer": true,
+          "revealImage": "/images/ET6ZJPhHNpYtBFEB3I5oc7ebo.png",
+          "fact": "Renaissance art (1400 – 1600) revived classical ideals through realism, proportion, and perspective."
+        },
+        {
+          "kind": "choice",
+          "id": "s4",
+          "prompt": "Which movement chased the fleeting effects of light outdoors?",
+          "revealImage": "/images/qqFOXZVDYLKpuP4c7TGuslIpg.png",
+          "options": [
+            "Impressionism",
+            "Realism",
+            "Baroque",
+            "Cubism"
+          ],
+          "fact": "Impressionism (1860 – 1880): broken brushwork, vibrant colors, and a focus on the open air."
+        },
+        {
+          "kind": "order",
+          "id": "s5",
+          "prompt": "Tap these movements in order, earliest first.",
+          "items": [
+            {
+              "label": "Renaissance",
+              "value": 1400
+            },
+            {
+              "label": "Baroque",
+              "value": 1600
+            },
+            {
+              "label": "Impressionism",
+              "value": 1860
+            }
+          ],
+          "fact": "Renaissance (1400 – 1600), then Baroque (1600 – 1700), then Impressionism (1860 – 1880)."
+        },
+        {
+          "kind": "choice",
+          "id": "s6",
+          "prompt": "Andy Warhol's Campbell's Soup I is an icon of which movement?",
+          "image": "/images/EhaGR8kQhMtFTiLNKg782n6vig.png",
+          "options": [
+            "Pop Art",
+            "Minimalism",
+            "Street Art",
+            "Bauhaus"
+          ],
+          "fact": "Pop Art (1950 – 1960) embraced mass-media imagery and consumer culture, often with a sense of humor."
+        },
+        {
+          "kind": "truefalse",
+          "id": "s7",
+          "statement": "Surrealism explored the unconscious mind and the realm of dreams.",
+          "answer": true,
+          "revealImage": "/images/AOEiscChmwuOfv0BiwoHkFVia8w.png",
+          "fact": "Surrealism (1920 – 1940) leaned on illogical juxtapositions and dreamlike imagery."
+        },
+        {
+          "kind": "choice",
+          "id": "s8",
+          "prompt": "Girl with Balloon is a work by which artist?",
+          "revealImage": "/images/Fznzo0SV6t4hVEiC6lK154rCY.png",
+          "options": [
+            "Banksy",
+            "Keith Haring",
+            "Shepard Fairey",
+            "M.CHAT"
+          ],
+          "fact": "Street Art (1980 – Today) grew out of graffiti, with deep roots in urban culture."
+        },
+        {
+          "kind": "choice",
+          "id": "s9",
+          "prompt": "Which of these movements appears earliest on the timeline?",
+          "revealImage": "/images/5fzOxsRCN9vnLxQGY7tyAJThNyQ.webp",
+          "options": [
+            "Romanesque",
+            "Renaissance",
+            "Baroque",
+            "Rococo"
+          ],
+          "fact": "Romanesque art (1000 – 1200): rounded arches, thick walls, and religious subject matter."
+        },
+        {
+          "kind": "choice",
+          "id": "s10",
+          "prompt": "Who painted The Kiss?",
+          "image": "/images/vjR34c3hedwebFjjkqZuRTdq8.png",
+          "options": [
+            "Gustav Klimt",
+            "Alphonse Mucha",
+            "Claude Monet",
+            "Salvador Dalí"
+          ],
+          "fact": "Klimt's The Kiss belongs to Art Nouveau (1890 – 1910), with its organic shapes and stylized motifs."
+        }
+      ]
+    },
+    {
+      "id": "curator",
+      "name": "Curator",
+      "tagline": "Periods, reactions, and attributions.",
+      "timed": false,
+      "questions": [
+        {
+          "kind": "choice",
+          "id": "c1",
+          "prompt": "Neoclassicism arose as a reaction against the excesses of which movement?",
+          "revealImage": "/images/GBKZcTZ37wdi4RjGFJyRuvboY.png",
+          "options": [
+            "Rococo",
+            "Baroque",
+            "Romanticism",
+            "Realism"
+          ],
+          "fact": "Neoclassicism (1780 – 1830) answered Rococo with order, balance, and simplicity."
+        },
+        {
+          "kind": "choice",
+          "id": "c2",
+          "prompt": "Who painted Las Meninas?",
+          "image": "/images/EcbAwXoDG86WlAKcim69OpJl0JY.png",
+          "options": [
+            "Diego Velázquez",
+            "Caravaggio",
+            "Peter Paul Rubens",
+            "Jacques-Louis David"
+          ],
+          "fact": "Velázquez's Las Meninas is a Baroque work (1600 – 1700)."
+        },
+        {
+          "kind": "order",
+          "id": "c3",
+          "prompt": "Tap these movements in order, earliest first.",
+          "items": [
+            {
+              "label": "Rococo",
+              "value": 1700
+            },
+            {
+              "label": "Romanticism",
+              "value": 1800
+            },
+            {
+              "label": "Realism",
+              "value": 1840
+            }
+          ],
+          "fact": "Rococo (1700 – 1780), Romanticism (1800 – 1850), then Realism (1840 – 1880)."
+        },
+        {
+          "kind": "truefalse",
+          "id": "c4",
+          "statement": "Realism aimed to idealize its subjects.",
+          "answer": false,
+          "revealImage": "/images/MexmtfOJivuXCyK9m2yovCs274.png",
+          "fact": "Realism (1840 – 1880) portrayed the world as it is — everyday subjects, with idealism avoided."
+        },
+        {
+          "kind": "choice",
+          "id": "c5",
+          "prompt": "Chiaroscuro — dramatic light and shadow — defines which movement?",
+          "revealImage": "/images/0JnVlanft2ZhGEyq6prEE4cQyec.png",
+          "options": [
+            "Baroque",
+            "Renaissance",
+            "Impressionism",
+            "Art Nouveau"
+          ],
+          "fact": "Baroque art (1600 – 1700) paired chiaroscuro with dramatic poses and emotional intensity."
+        },
+        {
+          "kind": "choice",
+          "id": "c6",
+          "prompt": "Jacques-Louis David's Oath of the Horatii belongs to which movement?",
+          "image": "/images/zVqT2YehgnQzrXuKTpqCXNhhdQ.png",
+          "options": [
+            "Neoclassicism",
+            "Romanticism",
+            "Baroque",
+            "Realism"
+          ],
+          "fact": "David painted all three Neoclassical works on this timeline, including Napoleon at the Great St. Bernard."
+        },
+        {
+          "kind": "choice",
+          "id": "c7",
+          "prompt": "Which movement fused art, craft, and technology into functional design?",
+          "revealImage": "/images/jcbqOcfZgceEIL2mNJgmwTjqPJs.png",
+          "options": [
+            "Bauhaus",
+            "Cubism",
+            "Minimalism",
+            "Conceptual Art"
+          ],
+          "fact": "The Bauhaus (1919 – 1938) put design at the center of daily life, free of unnecessary ornamentation."
+        },
+        {
+          "kind": "truefalse",
+          "id": "c8",
+          "statement": "On this timeline, Impressionism begins before Realism.",
+          "answer": false,
+          "revealImage": "/images/Bv3WlKyMrgj7ejC1zU2V2ZKiA.png",
+          "fact": "Realism starts in 1840; Impressionism follows in 1860."
+        },
+        {
+          "kind": "choice",
+          "id": "c9",
+          "prompt": "The Persistence of Memory is by which artist?",
+          "image": "/images/PaIiPOKvUEnE6GbAiuesLK7DvZg.png",
+          "options": [
+            "Salvador Dalí",
+            "René Magritte",
+            "Kay Sage",
+            "Pablo Picasso"
+          ],
+          "fact": "Dalí's melting clocks are Surrealism at its purest (1920 – 1940)."
+        },
+        {
+          "kind": "choice",
+          "id": "c10",
+          "prompt": "Organic shapes, asymmetry, and stylized plant motifs define which movement?",
+          "revealImage": "/images/OwaM05Oh4PYGUhFkaTCIUC7SM.png",
+          "options": [
+            "Art Nouveau",
+            "Rococo",
+            "Post-Impressionism",
+            "Contemporary Art"
+          ],
+          "fact": "Art Nouveau (1890 – 1910) is a decorative and flowing style."
+        }
+      ]
+    },
+    {
+      "id": "connoisseur",
+      "name": "Connoisseur",
+      "tagline": "Exact dates and deep cuts, against the clock.",
+      "timed": true,
+      "questions": [
+        {
+          "kind": "choice",
+          "id": "x1",
+          "prompt": "In which year does Cubism begin on the timeline?",
+          "revealImage": "/images/eD4X4o5BcmGB3OJnLavVBHpk020.png",
+          "options": [
+            "1907",
+            "1900",
+            "1914",
+            "1919"
+          ],
+          "fact": "Cubism runs 1907 – 1914: multiple perspectives and fragmented geometric forms."
+        },
+        {
+          "kind": "choice",
+          "id": "x2",
+          "prompt": "The Port at Sunset, Opus 236 (Saint-Tropez) is by which artist?",
+          "image": "/images/2QVN6M2xSahgy5dMg8Ul5AvIPTk.png",
+          "options": [
+            "Paul Signac",
+            "Georges Seurat",
+            "Claude Monet",
+            "Vincent van Gogh"
+          ],
+          "fact": "Signac sits in Post-Impressionism (1880 – 1900), alongside Seurat's pointillism."
+        },
+        {
+          "kind": "order",
+          "id": "x3",
+          "prompt": "Tap these movements in order, earliest first.",
+          "items": [
+            {
+              "label": "Cubism",
+              "value": 1907
+            },
+            {
+              "label": "Bauhaus",
+              "value": 1919
+            },
+            {
+              "label": "Surrealism",
+              "value": 1920
+            }
+          ],
+          "fact": "Cubism (1907), then Bauhaus (1919) — opening just one year before Surrealism (1920)."
+        },
+        {
+          "kind": "truefalse",
+          "id": "x4",
+          "statement": "Kay Sage's Margin of Silence is a Surrealist work.",
+          "answer": true,
+          "revealImage": "/images/JCQTfYDLjDwbeMFYdkMAXf1t5Ck.png",
+          "fact": "Sage hangs alongside Magritte and Dalí in Surrealism (1920 – 1940)."
+        },
+        {
+          "kind": "choice",
+          "id": "x5",
+          "prompt": "Which movement's experiments spanned pointillism, fauvism, and expressionism?",
+          "revealImage": "/images/Y6rSjuGqpWUsoKQ3slCUH2nzTw8.png",
+          "options": [
+            "Post-Impressionism",
+            "Impressionism",
+            "Cubism",
+            "Contemporary Art"
+          ],
+          "fact": "Post-Impressionism (1880 – 1900) was less one style than a laboratory of styles."
+        },
+        {
+          "kind": "choice",
+          "id": "x6",
+          "prompt": "Who painted The Ninth Wave?",
+          "image": "/images/HuZyDjN2dLGjVy5Sj2KJEZnoc.png",
+          "options": [
+            "Hovhannes Aivazovsky",
+            "J. M. W. Turner",
+            "Alexandre-Gabriel Decamps",
+            "Édouard Manet"
+          ],
+          "fact": "Aivazovsky's seascape carries Romanticism's love of drama and the sublime (1800 – 1850)."
+        },
+        {
+          "kind": "choice",
+          "id": "x7",
+          "prompt": "Marcel Breuer's B5 chair belongs to which movement?",
+          "revealImage": "/images/LM9TNDoxpfc9GFTOpBaZvwLBrY.png",
+          "options": [
+            "Bauhaus",
+            "Minimalism",
+            "Postmodernism",
+            "Conceptual Art"
+          ],
+          "fact": "The B5 embodies the Bauhaus fusion of craft and industry (1919 – 1938)."
+        },
+        {
+          "kind": "truefalse",
+          "id": "x8",
+          "statement": "Minimalism begins in the same year Pop Art ends.",
+          "answer": true,
+          "revealImage": "/images/KhulLVj2mgaqnVjTV55pim4aaM.png",
+          "fact": "Pop Art closes in 1960 exactly as Minimalism opens (1960 – 1970)."
+        },
+        {
+          "kind": "choice",
+          "id": "x9",
+          "prompt": "Chris Burden's Urban Light appears under which movement?",
+          "image": "/images/Jnv9UJ2VH3rIpJR1fWd6vLnC0.png",
+          "options": [
+            "Contemporary Art",
+            "Conceptual Art",
+            "Postmodernism",
+            "Minimalism"
+          ],
+          "fact": "Contemporary Art (1980 – Today) spans the breadth of today's globalized practice."
+        },
+        {
+          "kind": "choice",
+          "id": "x10",
+          "prompt": "What is the exact period of Neoclassicism?",
+          "revealImage": "/images/KHJiMATJ6rEfptASr2C8VeIqx8.png",
+          "options": [
+            "1780 – 1830",
+            "1700 – 1780",
+            "1800 – 1850",
+            "1840 – 1880"
+          ],
+          "fact": "Neoclassicism: 1780 – 1830, wedged between Rococo and Romanticism."
+        }
+      ]
+    },
+    {
+      "id": "expert",
+      "name": "Expert",
+      "tagline": "Every trick in the collection, on a shorter clock.",
+      "timed": true,
+      "timerSeconds": 10,
+      "hidden": true,
+      "questions": [
+        {
+          "kind": "choice",
+          "id": "e1",
+          "prompt": "Which artist appears under both Realism and Impressionism on this timeline?",
+          "revealImage": "/images/KAEjIsQ2qPHXvTV6bH4EqGu0yso.png",
+          "options": [
+            "Édouard Manet",
+            "Claude Monet",
+            "Jean-François Millet",
+            "Pierre-Auguste Renoir"
+          ],
+          "fact": "Manet hangs twice: The Old Musician in Realism, Luncheon on the Grass in Impressionism."
+        },
+        {
+          "kind": "truefalse",
+          "id": "e2",
+          "statement": "The Triumph of Venus is by Sandro Botticelli.",
+          "answer": false,
+          "revealImage": "/images/TuW6z49pusKMZHbGUWl40k3lyig.png",
+          "fact": "François Boucher painted The Triumph of Venus (Rococo); Botticelli's is The Birth of Venus."
+        },
+        {
+          "kind": "choice",
+          "id": "e3",
+          "prompt": "This embroidery belongs to which movement?",
+          "image": "/images/RbCWBxMxz2sBoH7yEsijI5P5SI.png",
+          "options": [
+            "Romanesque",
+            "Renaissance",
+            "Baroque",
+            "Romanticism"
+          ],
+          "fact": "The Bayeux Tapestry opens the timeline with Romanesque (1000 – 1200)."
+        },
+        {
+          "kind": "order",
+          "id": "e4",
+          "prompt": "Tap these movements in order, earliest first.",
+          "items": [
+            {
+              "label": "Impressionism",
+              "value": 1860
+            },
+            {
+              "label": "Post-Impressionism",
+              "value": 1880
+            },
+            {
+              "label": "Art Nouveau",
+              "value": 1890
+            }
+          ],
+          "fact": "A tight thirty years: Impressionism (1860), Post-Impressionism (1880), Art Nouveau (1890)."
+        },
+        {
+          "kind": "choice",
+          "id": "e5",
+          "prompt": "Which movement's exact period is 1919 – 1938?",
+          "revealImage": "/images/jcbqOcfZgceEIL2mNJgmwTjqPJs.png",
+          "options": [
+            "Bauhaus",
+            "Cubism",
+            "Surrealism",
+            "Minimalism"
+          ],
+          "fact": "The Bauhaus school years bound the movement precisely: 1919 – 1938."
+        },
+        {
+          "kind": "choice",
+          "id": "e6",
+          "prompt": "Cindy Sherman's Untitled Film Still #21 appears under which movement?",
+          "image": "/images/531maUXxiVT2yuJPsVBuPM3DwE.png",
+          "options": [
+            "Postmodernism",
+            "Contemporary Art",
+            "Conceptual Art",
+            "Street Art"
+          ],
+          "fact": "Sherman's ironic self-staging belongs to Postmodernism (1965 – Today)."
+        },
+        {
+          "kind": "truefalse",
+          "id": "e7",
+          "statement": "Exactly three movements on the timeline run to “Today”.",
+          "answer": false,
+          "revealImage": "/images/dXvqzBrO5g5ttGg9VgjWS0YShYs.png",
+          "fact": "Four do: Conceptual Art, Postmodernism, Street Art, and Contemporary Art."
+        },
+        {
+          "kind": "choice",
+          "id": "e8",
+          "prompt": "Who made Mechanical Stage Design?",
+          "revealImage": "/images/HHkaNAwgEOcDzCLYizQjVMXNaM.png",
+          "options": [
+            "Joost Schmidt",
+            "László Moholy-Nagy",
+            "Marcel Breuer",
+            "Juan Gris"
+          ],
+          "fact": "Schmidt's stage design sits in the Bauhaus alongside Breuer's B5 and Moholy-Nagy's Composition."
+        },
+        {
+          "kind": "choice",
+          "id": "e9",
+          "prompt": "This Manet canvas appears under which movement?",
+          "image": "/images/mSiJho6qWiqt72JP2F58cK3BQbM.png",
+          "options": [
+            "Realism",
+            "Impressionism",
+            "Post-Impressionism",
+            "Romanticism"
+          ],
+          "fact": "The Old Musician sits in Realism (1840 – 1880), before Manet's Impressionist entry."
+        },
+        {
+          "kind": "choice",
+          "id": "e10",
+          "prompt": "Rococo ends in 1780. Which movement begins that same year?",
+          "revealImage": "/images/1KvJi1ZRMKpuDuAWeI0388iM7U.png",
+          "options": [
+            "Neoclassicism",
+            "Romanticism",
+            "Realism",
+            "Baroque"
+          ],
+          "fact": "Neoclassicism (1780 – 1830) answers Rococo the year it closes."
+        }
+      ]
+    }
+  ]
+}

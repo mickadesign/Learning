@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /Users/micka/Documents/GitHub/Learning; ls /Users/micka/Documents/GitHub/ | head -50)",
+      "Bash(npm -v)",
+      "Bash(gh auth *)",
+      "Bash(curl -sI --max-time 8 https://fonts.googleapis.com/css2?family=Inter)",
+      "Bash(curl -sI --max-time 8 https://github.com/google/fonts/raw/main/ofl/instrumentserif/InstrumentSerif-Regular.ttf)"
+    ]
+  }
+}
