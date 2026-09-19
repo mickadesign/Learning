@@ -10,7 +10,7 @@
 // in Node (the generator, the CLI); Node requests carry a User-Agent as
 // Wikimedia asks.
 
-import type { ImageCredit, PictureHint } from "./deck";
+import type { ImageCredit, PictureHint, RevealPictureHint } from "./deck";
 
 export interface ImageCandidate {
   /** A resized copy (about `width` px wide) to put on the card. */
@@ -165,6 +165,26 @@ export async function wikipediaLeadImage(
   title: string,
   options: LookupOptions = {}
 ): Promise<ImageCandidate | null> {
+  const { lang = "en", width = 800 } = options;
+  // A deck names the same article more than once (a "which is X?" card and
+  // a true/false about X): one lookup per article per page load.
+  const key = `${lang}|${width}|${title.trim().toLowerCase()}`;
+  let pending = leadImageCache.get(key);
+  if (!pending) {
+    pending = lookupLeadImage(title, options);
+    leadImageCache.set(key, pending);
+    // A failed lookup shouldn't poison later tries.
+    pending.catch(() => leadImageCache.delete(key));
+  }
+  return pending;
+}
+
+const leadImageCache = new Map<string, Promise<ImageCandidate | null>>();
+
+async function lookupLeadImage(
+  title: string,
+  options: LookupOptions
+): Promise<ImageCandidate | null> {
   const { lang = "en", width = 800, signal } = options;
   const slug = encodeURIComponent(title.trim().replace(/ /g, "_"));
   const summary = await getJson<Summary>(
@@ -267,7 +287,7 @@ export function creditFor(c: ImageCandidate): ImageCredit {
  *  article has no reusable lead image; the card comes back untouched then,
  *  minus the hint. */
 export async function attachPicture<T extends { kind: string }>(
-  card: T & { picture?: PictureHint },
+  card: T & { picture?: PictureHint | RevealPictureHint },
   options: LookupOptions = {}
 ): Promise<{ card: T; found: ImageCandidate | null }> {
   const { picture, ...rest } = card;
@@ -275,7 +295,8 @@ export async function attachPicture<T extends { kind: string }>(
   if (!picture || card.kind === "order") return { card: bare, found: null };
   const found = await wikipediaLeadImage(picture.wikipediaTitle, options).catch(() => null);
   if (!found) return { card: bare, found: null };
-  const slot = card.kind === "truefalse" ? "revealImage" : picture.slot;
+  const slot =
+    card.kind === "truefalse" ? "revealImage" : ("slot" in picture && picture.slot) || "revealImage";
   return {
     card: {
       ...bare,

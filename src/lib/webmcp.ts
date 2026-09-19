@@ -20,6 +20,8 @@ import {
   EXAMPLE_CARDS,
   HOUSE_STYLE,
   PictureHintSchema,
+  RevealPictureHintSchema,
+  cardPicture,
   deckJsonSchema,
   parseDeck,
   slugify,
@@ -117,37 +119,56 @@ function kindCounts(questions: QuizQuestion[]) {
 /** Cards that could carry a picture but don't — choice and truefalse cards
  *  with neither slot filled. Order cards take no picture. */
 function withoutPicture(questions: QuizQuestion[]): number {
-  return questions.filter(
-    (q) => q.kind !== "order" && !("image" in q && q.image) && !q.revealImage
-  ).length;
+  return questions.filter((q) => q.kind !== "order" && !cardPicture(q)).length;
+}
+
+/** A card can name a picture or carry one, not both: the hint would
+ *  silently overwrite the explicit slot, alt and credit. */
+function pictureConflict(card: { picture?: unknown; image?: unknown; revealImage?: unknown }): boolean {
+  return !!card.picture && !!(card.image || card.revealImage);
 }
 
 /** Resolve `picture` hints inside a raw, not-yet-validated deck (the import
- *  path), leaving everything else for parseDeck to judge. */
+ *  path), leaving everything else for parseDeck to judge. A malformed hint
+ *  is an error naming its path — parseDeck would otherwise strip it without
+ *  a word and the agent would believe the picture was attached. */
 async function resolveRawPictures(raw: unknown): Promise<{ deck: unknown; missing: string[] }> {
   const missing: string[] = [];
+  const problems: string[] = [];
   if (!raw || typeof raw !== "object" || !Array.isArray((raw as { levels?: unknown }).levels))
     return { deck: raw, missing };
   const levels = await Promise.all(
-    ((raw as { levels: unknown[] }).levels).map(async (level) => {
+    ((raw as { levels: unknown[] }).levels).map(async (level, li) => {
       if (!level || typeof level !== "object" || !Array.isArray((level as { questions?: unknown }).questions))
         return level;
       const questions = await Promise.all(
-        ((level as { questions: unknown[] }).questions).map(async (q) => {
+        ((level as { questions: unknown[] }).questions).map(async (q, qi) => {
           if (!q || typeof q !== "object" || !("picture" in q)) return q;
-          const hint = PictureHintSchema.safeParse((q as { picture: unknown }).picture);
-          if (!hint.success) return q;
-          const { card, found } = await attachPicture({
+          const path = `levels.${li}.questions.${qi}`;
+          const card = q as { kind?: unknown; picture: unknown; image?: unknown; revealImage?: unknown };
+          if (pictureConflict(card)) {
+            problems.push(`${path}: use picture or image/revealImage, not both`);
+            return q;
+          }
+          const hint = (card.kind === "truefalse" ? RevealPictureHintSchema : PictureHintSchema).safeParse(
+            card.picture
+          );
+          if (!hint.success) {
+            problems.push(`${path}.picture: ${issues(hint.error).trim()}`);
+            return q;
+          }
+          const { card: resolved, found } = await attachPicture({
             ...(q as unknown as { kind: string }),
             picture: hint.data,
           });
           if (!found) missing.push(hint.data.wikipediaTitle);
-          return card;
+          return resolved;
         })
       );
       return { ...level, questions };
     })
   );
+  if (problems.length) throw new Error(`Invalid pictures:\n${problems.map((p) => `  ${p}`).join("\n")}`);
   return { deck: { ...(raw as object), levels }, missing };
 }
 
@@ -216,9 +237,20 @@ export function useAgentActivity(): AgentActivity {
   return useSyncExternalStore(subscribeActivity, () => activity, () => IDLE);
 }
 
-/** A call is under way. The draft's title sticks from call to call once a
- *  tool has named it; tools that hold the draft pass it in, so a reload
- *  between calls picks it up again. */
+/** The tools that mean a deck is being written. Reads, playing and
+ *  deleting don't turn the page into "Creating your flashcards…" — an
+ *  agent reading the format before asking for a topic, or reading a deck
+ *  it just published, is not creating anything. */
+const WRITING_TOOLS = new Set([
+  "start_flashcard_deck",
+  "add_flashcards",
+  "find_flashcard_images",
+  "publish_flashcard_deck",
+  "import_flashcards",
+]);
+
+/** A writing call is under way. The draft's title sticks from call to
+ *  call once a call has named it. */
 function noteWorking(tool: string, title?: string) {
   const now = Date.now();
   const prev = activity.phase === "working" ? activity : null;
@@ -231,13 +263,24 @@ function noteWorking(tool: string, title?: string) {
   });
 }
 
-/** Note a call before the tool runs. Publish and import mark the deck done
- *  themselves, once it is saved. */
+/** The draft a writing call is about, read off its input before the tool
+ *  runs: the title being started, or the draft a slug points at. So the
+ *  headline names the deck from the first call on, in one store write. */
+function titleOf(tool: string, input: unknown): string | undefined {
+  if (!input || typeof input !== "object") return undefined;
+  const { title, slug } = input as { title?: unknown; slug?: unknown };
+  if (tool === "start_flashcard_deck") return typeof title === "string" ? title : undefined;
+  return typeof slug === "string" ? getDraft(slug)?.title : undefined;
+}
+
+/** Note a writing call before the tool runs. Publish and import mark the
+ *  deck done themselves, once it is saved. */
 function withActivity(def: ToolDef): ToolDef {
+  if (!WRITING_TOOLS.has(def.name)) return def;
   return {
     ...def,
     async execute(input) {
-      noteWorking(def.name);
+      noteWorking(def.name, titleOf(def.name, input));
       return def.execute(input);
     },
   };
@@ -272,7 +315,9 @@ const FindImagesInput = z.object({
 });
 
 function jsonSchema(schema: z.ZodType): Record<string, unknown> {
-  const { $schema: _omit, ...rest } = z.toJSONSchema(schema, { unrepresentable: "any" });
+  // The input side: fields with defaults (picture.slot) are optional to
+  // send, and this is what hosts validate arguments against.
+  const { $schema: _omit, ...rest } = z.toJSONSchema(schema, { unrepresentable: "any", io: "input" });
   void _omit;
   return rest;
 }
@@ -440,7 +485,6 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
           levels: start.levels.map((l) => ({ ...l, questions: [] })),
         };
         saveDraft(draft);
-        noteWorking("start_flashcard_deck", draft.title);
         const levels = draft.levels.map((l) => `"${l.id}" (${l.name})`).join(", ");
         return text(
           `Draft "${draft.title}" started as ${slug} with levels ${levels}. Next: add_flashcards for each level — about 10 cards each, mixing choice, truefalse and order — then publish_flashcard_deck. passScore is ${draft.passScore}, so every level needs at least that many cards.`,
@@ -469,7 +513,6 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
           throw new Error(
             `No level "${levelId}" in draft ${slug}. Levels: ${draft.levels.map((l) => l.id).join(", ")}.`
           );
-        noteWorking("add_flashcards", draft.title);
         const taken = new Set(draft.levels.flatMap((l) => l.questions.map((q) => q.id)));
         let n = level.questions.length;
         const added: (CardInput & { id: string })[] = [];
@@ -483,6 +526,8 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
             if (new Set(card.items.map((it) => it.label)).size !== card.items.length)
               problems.push(`cards.${i}: order items need distinct labels`);
           }
+          if (card.kind !== "order" && pictureConflict(card))
+            problems.push(`cards.${i}: use picture or image/revealImage, not both`);
           let id = card.id;
           if (id && taken.has(id)) problems.push(`cards.${i}: id "${id}" is already used in this deck`);
           if (!id) {
@@ -500,14 +545,9 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
         const missing: string[] = [];
         const resolved = await Promise.all(
           added.map(async (card) => {
-            if (card.kind === "order" || !card.picture) {
-              const { picture: _drop, ...rest } = card as typeof card & { picture?: unknown };
-              void _drop;
-              return rest as QuizQuestion;
-            }
-            const hint = card.picture;
+            const hint = card.kind === "order" ? undefined : card.picture;
             const { card: withPicture, found } = await attachPicture(card);
-            (found ? attached : missing).push(found ? withPicture.id : hint.wikipediaTitle);
+            if (hint) (found ? attached : missing).push(found ? withPicture.id : hint.wikipediaTitle);
             return withPicture as QuizQuestion;
           })
         );
@@ -558,7 +598,6 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
         const { slug, open } = PublishInput.parse(input);
         const draft = getDraft(slug);
         if (!draft) throw new Error(`No draft "${slug}". list_flashcard_decks shows drafts.`);
-        noteWorking("publish_flashcard_deck", draft.title);
         const gaps = draftGaps(draft);
         if (gaps.length) throw new Error(`Not ready to publish: ${gaps.join("; ")}.`);
         const deck = parseDeck(draft);

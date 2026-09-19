@@ -231,23 +231,33 @@ export const PictureHintSchema = z.object({
   alt: z.string().min(1).describe("What the picture shows, without naming the answer"),
 });
 export type PictureHint = z.infer<typeof PictureHintSchema>;
+/** A true/false card's picture only ever shows with the answer, so its
+ *  hint has no slot to choose. */
+export const RevealPictureHintSchema = PictureHintSchema.omit({ slot: true });
+export type RevealPictureHint = z.infer<typeof RevealPictureHintSchema>;
 
 /** A card as an author may send it: same as a question, id optional, and a
  *  `picture` hint in place of image fields on choice and truefalse cards. */
 export const CardInputSchema = z.discriminatedUnion("kind", [
   withOptionalId(ChoiceQuestionSchema).extend({
     picture: PictureHintSchema.optional().describe(
-      "Name the Wikipedia article of the thing pictured; the site fetches and credits the image"
+      "Name the Wikipedia article of the thing pictured; the site fetches and credits the image. Either this or image/revealImage, not both."
     ),
   }),
   withOptionalId(TrueFalseQuestionSchema).extend({
-    picture: PictureHintSchema.optional().describe(
-      "Name the Wikipedia article of the thing pictured; shown blurred until the answer"
+    picture: RevealPictureHintSchema.optional().describe(
+      "Name the Wikipedia article of the thing pictured; shown blurred until the answer. Either this or revealImage, not both."
     ),
   }),
   withOptionalId(OrderQuestionSchema),
 ]);
 export type CardInput = z.infer<typeof CardInputSchema>;
+
+/** The picture a card carries, whichever slot it sits in. */
+export function cardPicture(q: QuizQuestion | CardInput): string | undefined {
+  if (q.kind === "order") return undefined;
+  return (q.kind === "choice" ? q.image : undefined) ?? q.revealImage;
+}
 
 /** What starts a draft: the deck's metadata and its levels without cards. */
 export const DeckStartSchema = DeckBaseSchema.omit({ levels: true, slug: true }).extend({

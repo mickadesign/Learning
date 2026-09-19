@@ -23,8 +23,9 @@ the shortest path to a finished deck.
 
 ## The shortest path to a new deck
 
-1. `get_flashcard_format` — read the format, one example of each card kind,
-   the rules, and the house style.
+1. `get_flashcard_format` — read the workflow, the rules, and the house
+   style (about 3 KB). Ask for `section: "examples"` for one card of each
+   kind, or `"schema"` for the deck JSON Schema.
 2. `start_flashcard_deck` — title, headline (a question), tagline, verdicts,
    and the levels without cards. You get a slug back.
 3. `add_flashcards` — about ten cards per level, in one or more batches.
@@ -213,7 +214,7 @@ Removes a saved deck or a draft. The built-in deck can't be deleted.
 | Answer type | `kind`: `choice`, `truefalse`, `order` | Drives the card's layout and keyboard handling. |
 | Correct answer | `options[0]`, `answer`, or `items` sorted by `value` | The site shuffles options and items itself. |
 | Answer revealed | `fact` | One line shown after answering, right or wrong. |
-| Picture | `image` or `revealImage`, plus `imageAlt` and `imageCredit` | A path under `/public` or an `https://` URL that exists. Credit shows on the reveal. |
+| Picture | `picture: { wikipediaTitle, slot?, alt }` when adding or importing; stored as `image` or `revealImage` plus `imageAlt` and `imageCredit` | The hint is resolved to the article's lead image and credit. A stored URL is a path under `/public` or an `https://` URL that exists. Credit shows on the reveal. |
 
 ## Pictures
 

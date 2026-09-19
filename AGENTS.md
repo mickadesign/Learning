@@ -38,10 +38,12 @@ site shuffles.
   unlocked" intro (card fan, confetti, Start), three card kinds (choice,
   true/false, order), countdown ring, results, share. Levels are never
   listed: Start resumes at the first set of cards not yet passed, and a pass
-  offers the next set. The cards and results are a faithful port of the Art
-  Timeline quiz; keep their motion and copy. Confetti is
-  `src/components/quiz/confetti.tsx` (monochrome, transform/opacity only,
-  off under reduced motion).
+  offers the next set. The cards are a faithful port of the Art Timeline
+  quiz; keep their motion and copy. The results view was adapted to the
+  deck model (next set instead of next level). Confetti is
+  `src/components/quiz/confetti.tsx`: canvas-confetti fireworks in the
+  theme's monochrome, portaled over the whole page, off under reduced
+  motion.
 - `src/components/agent-prompt-button.tsx` — the "Copy agent prompt" pill
   shown when the server has no key (copy + open in Claude / Codex / Cursor);
   the brief is `src/lib/agent-prompt.ts`, the marks `agent-marks.tsx`.

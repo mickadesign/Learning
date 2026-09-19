@@ -10,12 +10,14 @@ import {
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
+  cardPicture,
   shareTextFor,
   verdictFor,
   type ChoiceQuestion,
   type Deck,
   type ImageCredit,
   type OrderItem,
+  type QuizLevel,
   type OrderQuestion,
   type QuizQuestion,
   type TrueFalseQuestion,
@@ -876,12 +878,10 @@ function TimerRing({
 
 /** Up to three pictures from the deck, for its fan. Either slot counts: a
  *  thumbnail can't spoil a question that isn't shown next to it. */
-function deckThumbnails(deck: Deck): string[] {
-  return deck.levels
+function deckThumbnails(levels: QuizLevel[]): string[] {
+  return levels
     .flatMap((lv) => lv.questions)
-    .flatMap((q) =>
-      q.kind === "choice" ? [q.image ?? q.revealImage] : q.kind === "truefalse" ? [q.revealImage] : []
-    )
+    .map(cardPicture)
     .filter((src): src is string => !!src)
     .slice(0, 3);
 }
@@ -938,7 +938,6 @@ export function QuizModal({
   deck,
   shareLinks = false,
 }: QuizModalProps) {
-  const thumbnails = deckThumbnails(deck);
   // The deck drives everything below: levels, pass mark, countdown length.
   const QUIZ_LEVELS = deck.levels;
   const PASS_SCORE = deck.passScore;
@@ -959,6 +958,8 @@ export function QuizModal({
   const [timedOut, setTimedOut] = useState(false);
   // Timed levels open on a briefing slide; the clock only runs after Start.
   const [showTimedIntro, setShowTimedIntro] = useState(false);
+  // Whether the run that just ended unlocked the next set of cards.
+  const [justUnlocked, setJustUnlocked] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const [best, setBest] = useState<BestScores>({});
   // Guards resolve/timeout against double-firing (and against Strict Mode
@@ -987,6 +988,11 @@ export function QuizModal({
 
   const unlocked = (i: number) =>
     i === 0 || (best[QUIZ_LEVELS[i - 1].id] ?? 0) >= PASS_SCORE;
+
+  // Hidden levels stay a secret until the one before them is passed: they
+  // lend the intro neither their pictures nor their card count.
+  const visibleLevels = QUIZ_LEVELS.filter((lv, i) => !lv.hidden || unlocked(i));
+  const thumbnails = deckThumbnails(visibleLevels);
 
   const startRun = (i: number) => {
     setLevelIndex(i);
@@ -1040,8 +1046,10 @@ export function QuizModal({
       setOrderReady(false);
       return;
     }
-    // Run finished — persist the best score.
+    // Run finished — persist the best score. A pass on a level that wasn't
+    // passed before is what unlocks the next set; a replayed pass isn't.
     const prev = best[level.id] ?? -1;
+    setJustUnlocked(prev < PASS_SCORE && score >= PASS_SCORE);
     const isNewBest = score > prev;
     const nextBest = isNewBest ? { ...best, [level.id]: score } : best;
     if (isNewBest) {
@@ -1101,7 +1109,7 @@ export function QuizModal({
   const nextLevel =
     levelIndex + 1 < QUIZ_LEVELS.length ? QUIZ_LEVELS[levelIndex + 1] : null;
 
-  // The level page shares the proudest stat: the best score on the highest
+  // The intro shares the proudest stat: the best score on the highest
   // level the player has a score for. -1 until a first run is finished.
   let bestLevelIndex = -1;
   for (let i = QUIZ_LEVELS.length - 1; i >= 0; i--) {
@@ -1114,11 +1122,11 @@ export function QuizModal({
   // The levels play in sequence with no list to pick from: Start resumes at
   // the first set of cards the player hasn't passed yet (or from the top once
   // everything is passed).
-  let startIndex = QUIZ_LEVELS.findIndex(
-    (lv) => (best[lv.id] ?? 0) < PASS_SCORE
+  const startIndex = Math.max(
+    0,
+    QUIZ_LEVELS.findIndex((lv) => (best[lv.id] ?? 0) < PASS_SCORE)
   );
-  if (startIndex < 0) startIndex = 0;
-  const cardCount = QUIZ_LEVELS.reduce((n, lv) => n + lv.questions.length, 0);
+  const cardCount = visibleLevels.reduce((n, lv) => n + lv.questions.length, 0);
 
   // Opens X's composer pre-filled with the score-as-a-challenge line. The
   // link targets the score's share page (/s/[level]/[score]) so the post
@@ -1192,9 +1200,9 @@ export function QuizModal({
           aria-modal="true"
           aria-label={deck.headline}
           style={{ borderRadius: 20 }}
-          // Run/result views get one steady, taller footprint sized to fit an
-          // image card (image + three-line question + four answers + footer)
-          // without scrolling; level select stays content-sized.
+          // One steady footprint for every view, sized to fit an image card
+          // (image + three-line question + four answers + footer) without
+          // scrolling.
           className={cn(
             "fixed inset-0 z-50 m-auto max-h-[92vh] w-[min(480px,92vw)] overflow-y-auto",
             "h-[min(700px,92vh)]",
@@ -1441,7 +1449,7 @@ export function QuizModal({
                     <p className="mt-3 max-w-[30ch] text-[14px] leading-relaxed text-muted-foreground">
                       {verdictFor(deck, score, run?.length ?? 0)}
                     </p>
-                    {passed && nextLevel && (
+                    {passed && nextLevel && justUnlocked && (
                       <p className="mt-4 flex items-center gap-1 text-[13px] text-muted-foreground">
                         <DrawnCheck size={16} />
                         {nextLevel.questions.length} more cards unlocked

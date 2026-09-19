@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useIsPresent, useReducedMotion } from "framer-motion";
 import { spring } from "@/lib/springs";
 
 // ── The wandering cursor ────────────────────────────────────
@@ -41,11 +41,15 @@ export function WanderingCursor() {
   );
   const [leg, setLeg] = useState(LEG_S);
   const [pause, setPause] = useState(PAUSE_S);
+  // onAnimationComplete also fires for the exit fade; an element on its way
+  // out doesn't pick a new destination.
+  const present = useIsPresent();
   const next = useCallback(() => {
+    if (!present) return;
     setTarget(somewhere());
     setLeg(LEG_S());
     setPause(PAUSE_S());
-  }, []);
+  }, [present]);
 
   if (reduceMotion || typeof document === "undefined") return null;
 

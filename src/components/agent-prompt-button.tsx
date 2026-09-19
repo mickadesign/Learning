@@ -102,27 +102,39 @@ const AGENTS: Agent[] = [
     fallback: "https://chatgpt.com/codex",
   },
   {
+    // Cursor's web deeplink, not the cursor:// scheme: the page it opens
+    // launches Cursor with the prompt itself, and stays behind with the
+    // prompt, an "Open in Cursor" retry and a Copy button. The scheme plus
+    // a visibility-timed fallback misfired on desktop — a tab stays
+    // "visible" when another app comes to the front — and sent visitors
+    // to cursor.com with nothing attached.
     name: "Cursor",
     Mark: CursorMark,
-    href: (p) => `cursor://anysphere.cursor-deeplink/prompt?text=${encodeURIComponent(p)}`,
+    href: (p) => {
+      const url = new URL("https://cursor.com/link/prompt");
+      url.searchParams.set("text", p);
+      return url.toString();
+    },
     prefills: true,
-    fallback: "https://cursor.com/",
   },
 ];
 
 /** An app scheme that nothing handles fails silently. Same trick as the
- *  quiz's share button: if the page is still visible a beat later, the app
- *  didn't take over — go to the web fallback instead. Cancelled the moment
- *  the page hides, so it can't fire behind the app. */
+ *  quiz's share button: if nothing has taken over a beat later, the app
+ *  isn't installed — go to the web fallback instead. On desktop the page
+ *  never hides when an app comes to the front, it only loses focus, so the
+ *  window's blur cancels the timer too; it can't fire behind the app. */
 function openWithFallback(href: string, fallback: string) {
   const timer = window.setTimeout(() => {
-    if (document.visibilityState === "visible") window.location.href = fallback;
-  }, 1500);
+    if (document.visibilityState === "visible" && document.hasFocus())
+      window.location.href = fallback;
+  }, 2500);
   const cancel = () => window.clearTimeout(timer);
   window.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") cancel();
   }, { once: true });
   window.addEventListener("pagehide", cancel, { once: true });
+  window.addEventListener("blur", cancel, { once: true });
   window.location.href = href;
 }
 

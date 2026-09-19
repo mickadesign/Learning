@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useReducedMotion } from "framer-motion";
 import createConfetti from "canvas-confetti";
@@ -22,10 +22,21 @@ const INTERVAL_MS = 250;
 /** Particles per burst at the start; each later burst carries fewer. */
 const PARTICLES = 22;
 
-/** "rgb(r, g, b)" → [r, g, b]; anything else → null. */
+/** Any CSS color → [r, g, b], by painting one pixel with it and reading
+ *  the pixel back: computed theme colors come back as `oklch(…)` or
+ *  `lab(…)`, which neither a regex on "rgb(" nor a fillStyle round-trip
+ *  turns into numbers. Null when the canvas can't paint it. */
 function rgb(color: string): [number, number, number] | null {
-  const m = color.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
-  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 1;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.fillStyle = "#010203";
+  ctx.fillStyle = color;
+  if (ctx.fillStyle === "#010203" && color !== "#010203") return null;
+  ctx.fillRect(0, 0, 1, 1);
+  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+  return [r, g, b];
 }
 
 /** `amount` of `a` over `b`, as hex (canvas-confetti takes hex only). */
@@ -47,9 +58,15 @@ function tones(canvas: HTMLCanvasElement): string[] {
   return [mix(fg, bg, 1), mix(fg, bg, 0.7), mix(fg, bg, 0.45)];
 }
 
+/** How long after the last burst the last flecks can still be falling. */
+const SETTLE_MS = 1500;
+
 export function Confetti() {
   const reduceMotion = useReducedMotion() ?? false;
   const ref = useRef<HTMLCanvasElement>(null);
+  // The canvas leaves once the volley is over rather than sitting over the
+  // page (a viewport-sized layer) for as long as the parent keeps it.
+  const [over, setOver] = useState(false);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -84,13 +101,19 @@ export function Confetti() {
     };
     volley();
     const interval = window.setInterval(volley, INTERVAL_MS);
+    const settle = window.setTimeout(() => {
+      clearInterval(interval);
+      fire.reset();
+      setOver(true);
+    }, DURATION_MS + SETTLE_MS);
     return () => {
       clearInterval(interval);
+      clearTimeout(settle);
       fire.reset();
     };
   }, [reduceMotion]);
 
-  if (reduceMotion || typeof document === "undefined") return null;
+  if (over || reduceMotion || typeof document === "undefined") return null;
 
   return createPortal(
     <canvas

@@ -69,9 +69,9 @@ function statusLine(build: DeckBuild): string {
 /** An agent that stops calling tools shouldn't leave a spinner behind. */
 const AGENT_QUIET_MS = 90_000;
 
-/** The landing: one question, a combobox to answer it, and the quiz. Every
- *  deck — the built-in one and the ones written here — plays in the same
- *  modal. */
+/** The landing: one question, the agent prompt that answers it, the decks
+ *  on this page, and the quiz. Every deck — the built-in one and the ones
+ *  written here — plays in the same modal. */
 export function HomeScreen() {
   const saved = useSavedDecks();
   // Newest first, so a deck just written sits at the top of the list.
@@ -80,25 +80,7 @@ export function HomeScreen() {
   const [activeDeck, setActiveDeck] = useState<Deck>(DECK);
   const [quizOpen, setQuizOpen] = useState(false);
   const [build, setBuild] = useState<DeckBuild | null>(null);
-  // null until /api/decks answers: whether this server can write decks
-  // itself (the generate tool), which the status line's key follows.
-  const [canCreate, setCanCreate] = useState<boolean | null>(null);
   const building = build?.status.phase === "planning" || build?.status.phase === "writing";
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/decks")
-      .then((r) => r.json())
-      .then((d: { available: boolean }) => {
-        if (!cancelled) setCanCreate(!!d.available);
-      })
-      .catch(() => {
-        if (!cancelled) setCanCreate(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const openDeck = useCallback((deck: Deck) => {
     setActiveDeck(deck);
@@ -116,7 +98,7 @@ export function HomeScreen() {
   );
 
   // One build at a time; a second request while one runs is ignored (the
-  // combobox is disabled meanwhile, and the tool says so).
+  // tool says so).
   const buildRef = useRef<Promise<Deck> | null>(null);
   const generateDeck = useCallback(
     (topic: string, notes?: string): Promise<Deck> => {
@@ -150,7 +132,6 @@ export function HomeScreen() {
                 ? error.message
                 : String(error);
           setBuild({ topic, deck: null, pending: [], status: { phase: "error", message } });
-          if (error instanceof GenerationUnavailable) setCanCreate(false);
           failed?.(new Error(message));
         })
         .finally(() => {
@@ -219,6 +200,15 @@ export function HomeScreen() {
     return () => clearTimeout(id);
   }, [activity]);
   const agentQuiet = activity.phase === "working" && quietAt === activity.at;
+  // The same patience for an agent that never shows up: a stale /?agent
+  // link (a refresh after the session, a link the agent echoed back) falls
+  // back to the prompt instead of waiting forever.
+  const [expectedGaveUp, setExpectedGaveUp] = useState(false);
+  useEffect(() => {
+    if (!agentExpected || activity.phase !== "idle") return;
+    const id = setTimeout(() => setExpectedGaveUp(true), AGENT_QUIET_MS);
+    return () => clearTimeout(id);
+  }, [agentExpected, activity.phase]);
   const agentState: "expected" | "working" | "quiet" | "done" | null =
     activity.phase === "working"
       ? agentQuiet
@@ -226,7 +216,7 @@ export function HomeScreen() {
         : "working"
       : activity.phase === "done"
         ? "done"
-        : agentExpected
+        : agentExpected && !expectedGaveUp
           ? "expected"
           : null;
   // The headline follows the work: what is being created while the agent
@@ -251,15 +241,12 @@ export function HomeScreen() {
         // 480px: wide enough for "Creating your flashcards…" on one line.
         className="relative z-10 w-full max-w-[480px] py-24"
       >
-        {/* The great unlock: the moment an agent starts writing, the quiz's
-            confetti bursts from the headline. Keyed on the start of this
-            stretch of work, so it plays once per deck, not once per call;
-            a published deck gets a second burst. */}
+        {/* The great unlock: the moment an agent starts writing, fireworks
+            fill the page. Keyed on the start of this stretch of work, so
+            they play once per deck, not once per call. Publishing opens the
+            quiz, whose intro brings its own volley — no second one here. */}
         {activity.phase === "working" && agentState === "working" && (
           <Confetti key={activity.since} />
-        )}
-        {agentState === "done" && activity.phase === "done" && (
-          <Confetti key={activity.at} />
         )}
         {/* The agent's hand: a big cursor drifting over the page while it
             writes. */}
@@ -275,8 +262,9 @@ export function HomeScreen() {
             transition={{ duration: spring.slow.duration, ease: "easeOut" }}
             className={cn(
               "text-balance font-heading text-[52px] leading-none text-foreground",
-              // The one-line promise stays on one line.
-              headline === "Creating your flashcards…" && "whitespace-nowrap",
+              // The one-line promise stays on one line where the column is
+              // wide enough (480px); on a phone it wraps like any headline.
+              headline === "Creating your flashcards…" && "sm:whitespace-nowrap",
               // While the agent writes, the headline itself is the loading
               // signal: a muted band sweeps across it.
               agentState === "working" && "shimmer-heading"
@@ -311,7 +299,7 @@ export function HomeScreen() {
                 ? `${build.status.phase}-${build.status.phase === "writing" ? build.status.index : ""}`
                 : agentState
                   ? `agent-${agentState}-${activity.phase === "working" ? activity.tool : ""}`
-                  : `idle-${canCreate}`
+                  : "idle"
             }
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
