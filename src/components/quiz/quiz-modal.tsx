@@ -10,22 +10,26 @@ import {
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  cardPicture,
   shareTextFor,
   verdictFor,
   type ChoiceQuestion,
   type Deck,
   type ImageCredit,
   type OrderItem,
-  type QuizLevel,
   type OrderQuestion,
   type QuizQuestion,
   type TrueFalseQuestion,
 } from "@/lib/deck";
 import { Button } from "@/components/ui/button";
 import { Confetti } from "@/components/quiz/confetti";
+import {
+  TIMER_RING_CIRCUMFERENCE,
+  TIMER_RING_RADIUS,
+  TimerRing,
+} from "@/components/quiz/timer-ring";
 import { useProximityHover, type ItemRect } from "@/hooks/use-proximity-hover";
 import { useTouchPrimary } from "@/hooks/use-touch-primary";
+import { deckThumbnails } from "@/lib/deck-thumbnails";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { surfaceClasses } from "@/lib/surface-classes";
@@ -293,7 +297,7 @@ function TimedIntro({ seconds }: { seconds: number }) {
           <circle
             cx="12"
             cy="12"
-            r={RING_R}
+            r={TIMER_RING_RADIUS}
             fill="none"
             stroke="currentColor"
             strokeWidth="0.75"
@@ -302,7 +306,7 @@ function TimedIntro({ seconds }: { seconds: number }) {
           <circle
             cx="12"
             cy="12"
-            r={RING_R}
+            r={TIMER_RING_RADIUS}
             fill="none"
             stroke="currentColor"
             strokeWidth="0.75"
@@ -311,8 +315,8 @@ function TimedIntro({ seconds }: { seconds: number }) {
               "text-foreground transition-[stroke-dashoffset] duration-100 ease-linear",
               remaining <= 5 && "text-destructive"
             )}
-            strokeDasharray={RING_C}
-            strokeDashoffset={RING_C * (1 - frac)}
+            strokeDasharray={TIMER_RING_CIRCUMFERENCE}
+            strokeDashoffset={TIMER_RING_CIRCUMFERENCE * (1 - frac)}
           />
         </svg>
         {/* Rolling countdown, odometer style: independent digit columns so
@@ -787,103 +791,6 @@ function OrderCard({
       </div>
     </div>
   );
-}
-
-// ── Countdown ring (Connoisseur only) ───────────────────────
-
-const RING_R = 10;
-const RING_C = 2 * Math.PI * RING_R;
-
-/** Mounted with a per-question `key`, so every card starts a fresh ring. */
-function TimerRing({
-  active,
-  seconds,
-  onTimeout,
-}: {
-  active: boolean;
-  /** Countdown length — Expert runs a shorter clock than Connoisseur. */
-  seconds: number;
-  onTimeout: () => void;
-}) {
-  const [remaining, setRemaining] = useState(seconds);
-  const onTimeoutRef = useRef(onTimeout);
-  useEffect(() => {
-    onTimeoutRef.current = onTimeout;
-  }, [onTimeout]);
-  // Carries the countdown across pauses so the ring freezes on reveal (and a
-  // pause can't be exploited to refill the clock).
-  const remainingRef = useRef(seconds);
-
-  useEffect(() => {
-    if (!active) return;
-    const start = Date.now();
-    const base = remainingRef.current;
-    const id = setInterval(() => {
-      const left = Math.max(0, base - (Date.now() - start) / 1000);
-      remainingRef.current = left;
-      setRemaining(left);
-      if (left <= 0) {
-        clearInterval(id);
-        onTimeoutRef.current();
-      }
-    }, 100);
-    return () => clearInterval(id);
-  }, [active]);
-
-  const frac = remaining / seconds;
-
-  return (
-    <span
-      className="relative inline-flex size-9 items-center justify-center"
-      role="timer"
-      aria-label={`${Math.ceil(remaining)} seconds remaining`}
-    >
-      <svg viewBox="0 0 24 24" className="absolute inset-0 size-full -rotate-90">
-        <circle
-          cx="12"
-          cy="12"
-          r={RING_R}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          className="text-border"
-        />
-        <circle
-          cx="12"
-          cy="12"
-          r={RING_R}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          className={cn(
-            "text-foreground transition-[stroke-dashoffset] duration-100 ease-linear",
-            remaining <= 5 && "text-destructive"
-          )}
-          strokeDasharray={RING_C}
-          strokeDashoffset={RING_C * (1 - frac)}
-        />
-      </svg>
-      <span
-        className={cn(
-          "relative text-[11px] tabular-nums text-muted-foreground",
-          remaining <= 5 && "text-destructive"
-        )}
-      >
-        {Math.ceil(remaining)}
-      </span>
-    </span>
-  );
-}
-
-/** Up to three pictures from the deck, for its fan. Either slot counts: a
- *  thumbnail can't spoil a question that isn't shown next to it. */
-function deckThumbnails(levels: QuizLevel[]): string[] {
-  return levels
-    .flatMap((lv) => lv.questions)
-    .map(cardPicture)
-    .filter((src): src is string => !!src)
-    .slice(0, 3);
 }
 
 /** The deck itself, as a loose fan of its first illustrated cards. Each

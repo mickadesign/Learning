@@ -39,7 +39,8 @@ const HIDDEN = { opacity: 0, scale: 0.6, filter: "blur(4px)" };
  *  outlasts a disappear (0.08s vs 0.06s). Both are tweens: a spring settles
  *  visibly sooner than its nominal duration, which would invert that order.
  *  Reduced motion swaps in place. */
-function CopyPromptIcon({ size = 16, strokeWidth, className }: IconComponentProps) {
+function CopyPromptIcon({ strokeWidth, className }: IconComponentProps) {
+  const size = 16;
   const copied = useContext(CopiedContext);
   const CopyIcon = useIcon("copy");
   const CheckIcon = useIcon("check");
@@ -197,7 +198,7 @@ export function AgentPromptButton({ className }: { className?: string }) {
         className={cn(
           // One step above the page, like the level cards, so the pill reads
           // as a control in both themes.
-          "inline-flex h-11 items-center gap-0.5 rounded-full border border-border bg-surface-5 p-1",
+          "inline-flex h-11 w-fit items-center gap-0.5 rounded-full border border-border bg-surface-5 p-1",
           className
         )}
       >
@@ -210,7 +211,7 @@ export function AgentPromptButton({ className }: { className?: string }) {
           className="rounded-full text-foreground"
           aria-live="polite"
         >
-          Copy agent prompt
+          Copy prompt
           {copied && <span className="sr-only">Copied</span>}
         </Button>
         <span aria-hidden className="mx-1 h-5 w-px bg-border" />

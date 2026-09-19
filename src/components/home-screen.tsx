@@ -15,24 +15,11 @@ import { Confetti } from "@/components/quiz/confetti";
 import { WanderingCursor } from "@/components/wandering-cursor";
 import { DeckList } from "@/components/deck-list";
 import { AgentPromptButton } from "@/components/agent-prompt-button";
+import { FallingLinesBackdrop } from "@/components/falling-lines-backdrop";
+import { LandingCardFan } from "@/components/landing-card-fan";
+import { PrismBackdrop } from "@/components/prism-backdrop";
 import { QuizModal } from "@/components/quiz/quiz-modal";
 import { ThemeToggle } from "@/components/theme-toggle";
-
-/** Faint decorative gridlines under the fold. */
-function BackdropGrid() {
-  const lines = Array.from({ length: 9 });
-  return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 top-1/4 overflow-hidden">
-      {lines.map((_, i) => (
-        <span
-          key={i}
-          className="absolute top-0 bottom-0 border-l border-dashed border-border/60"
-          style={{ left: `${(i / lines.length) * 100}%` }}
-        />
-      ))}
-    </div>
-  );
-}
 
 /** The Button's loading glyph, on its own, for the status line. */
 function Spinner() {
@@ -228,11 +215,12 @@ export function HomeScreen() {
         : "Creating your flashcards…"
       : agentState === "done" && activity.phase === "done"
         ? `Flashcards for ${activity.deck.title} are ready.`
-        : "What do you want to know by heart?";
+        : "Expand your human’s memory";
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-surface-1 px-6">
-      <BackdropGrid />
+      <FallingLinesBackdrop />
+      <PrismBackdrop />
 
       <motion.main
         initial={{ opacity: 0, y: 12 }}
@@ -241,6 +229,13 @@ export function HomeScreen() {
         // 480px: wide enough for "Creating your flashcards…" on one line.
         className="relative z-10 w-full max-w-[480px] py-24"
       >
+        {!build && !agentState && (
+          <LandingCardFan
+            levels={DECK.levels}
+            timerSeconds={DECK.timerSeconds}
+          />
+        )}
+
         {/* The great unlock: the moment an agent starts writing, fireworks
             fill the page. Keyed on the start of this stretch of work, so
             they play once per deck, not once per call. Publishing opens the
@@ -261,7 +256,7 @@ export function HomeScreen() {
             exit={{ opacity: 0, transition: { duration: spring.moderate.exit.duration } }}
             transition={{ duration: spring.slow.duration, ease: "easeOut" }}
             className={cn(
-              "text-balance font-heading text-[52px] leading-none text-foreground",
+              "relative z-10 text-balance font-heading text-[52px] leading-none text-foreground",
               // The one-line promise stays on one line where the column is
               // wide enough (480px); on a phone it wraps like any headline.
               headline === "Creating your flashcards…" && "sm:whitespace-nowrap",
@@ -307,7 +302,11 @@ export function HomeScreen() {
             transition={{ duration: spring.moderate.duration, ease: "easeOut" }}
             className={cn(
               "flex min-h-[28px] items-center gap-3 text-[14px] leading-snug text-muted-foreground",
-              decks.length > 1 && agentState !== "working" ? "mt-4" : "mt-8"
+              decks.length > 1 && agentState !== "working"
+                ? "mt-4"
+                : build || agentState
+                  ? "mt-8"
+                  : "mt-2"
             )}
           >
             {build ? (
@@ -352,12 +351,11 @@ export function HomeScreen() {
             ) : (
               // The page is agent-first: hand the job to the visitor's own
               // agent. The prompt sends it here to use the WebMCP tools.
-              <div className="flex flex-col items-start gap-3">
-                <AgentPromptButton />
+              <div className="flex flex-col items-start gap-9">
                 <span>
-                  Paste it into your AI agent: it opens this page, asks what
-                  you want to learn, and writes your first ten cards.
+                  Ask what they want to learn, then build beautiful flashcards.
                 </span>
+                <AgentPromptButton />
               </div>
             )}
           </motion.div>
@@ -389,7 +387,7 @@ export function HomeScreen() {
             rel="noopener noreferrer"
             className="transition-colors duration-80 hover:text-foreground"
           >
-            Fork this on GitHub
+            Free &amp; Open Source
           </a>
         )}
         <span aria-hidden>·</span>
