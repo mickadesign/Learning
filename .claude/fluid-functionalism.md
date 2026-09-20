@@ -21,7 +21,10 @@
   scroll-area, fluid-hover-highlight, use-fluid-hover, use-merge-split,
   use-keyboard-nav-gate, elevated, popup, size-context), springs,
   font-weight, icon-context, surface-context/surface-classes,
-  use-touch-primary. (thinking-indicator was installed and then removed
+  use-touch-primary. (input-copy + tooltip were installed for the share
+  link and removed again the same day: the link is a ghost icon button
+  beside Play, `src/components/share-link-button.tsx`. thinking-indicator
+  was installed and then removed
   again: the landing page shimmers its headline instead, via
   `.shimmer-heading` in globals.css on the `shimmer` keyframes that install
   left behind. The install had also tried to rewrite utils.ts to the `cn`

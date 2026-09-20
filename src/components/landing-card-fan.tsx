@@ -297,12 +297,12 @@ export function LandingCardFan({
                     aria-hidden="true"
                     className="flex h-[43px] flex-col bg-surface-4 px-[6px] py-[5px]"
                   >
-                    <span className="h-[3px] w-3/4 bg-foreground/25" />
-                    <div className="mt-[6px] flex flex-col gap-[2.5px]">
-                      <span className="h-[3px] w-full bg-foreground/10" />
-                      <span className="h-[3px] w-full bg-foreground/10" />
-                      <span className="h-[3px] w-full bg-foreground/10" />
-                      <span className="h-[3px] w-full bg-foreground/10" />
+                    {/* A question line and two answer pills: the least
+                        that still reads as a flashcard at this size. */}
+                    <span className="h-[4px] w-3/4 rounded-full bg-foreground/25" />
+                    <div className="mt-[6px] flex flex-col gap-[4px]">
+                      <span className="h-[6px] w-full rounded-full bg-foreground/10" />
+                      <span className="h-[6px] w-full rounded-full bg-foreground/10" />
                     </div>
                   </div>
                 </motion.button>

@@ -15,13 +15,18 @@ const SPREAD = 1;
 const SOFTNESS = 0.535;
 const SATURATION = 0.89;
 
-/** A soft spectral fan that converges at the bottom-center split point. */
+/**
+ * A soft spectral fan that converges at the bottom-center split point.
+ * Dark mode only: in light mode the spectrum lives on the falling lines
+ * alone (`FallingLinesBackdrop`), and the page keeps its plain surface.
+ */
 export function PrismBackdrop() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reduceMotion = useReducedMotion();
   const { theme } = useTheme();
 
   useEffect(() => {
+    if (theme !== "dark") return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -90,7 +95,7 @@ export function PrismBackdrop() {
       spectrum.addColorStop(spectrumArc, "transparent");
       spectrum.addColorStop(1, "transparent");
 
-      context.globalAlpha = (theme === "dark" ? 0.01 : 0.045) * INTENSITY;
+      context.globalAlpha = 0.01 * INTENSITY;
       context.fillStyle = spectrum;
       context.fillRect(0, 0, width, height);
 
@@ -144,7 +149,7 @@ export function PrismBackdrop() {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="pointer-events-none absolute inset-0 size-full mix-blend-multiply dark:mix-blend-screen"
+      className="pointer-events-none absolute inset-0 hidden size-full mix-blend-screen dark:block"
     />
   );
 }

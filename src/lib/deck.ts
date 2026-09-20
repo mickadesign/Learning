@@ -11,6 +11,7 @@ const slug = z
 const imagePath = z
   .string()
   .min(1)
+  .regex(/^(?:\/[^\s]*|https:\/\/[^\s]+)$/, "a path under /public or an https URL")
   .describe(
     "Path under /public (e.g. /images/starry-night.jpg) or an absolute https URL"
   );
@@ -22,7 +23,11 @@ export const ImageCreditSchema = z
     title: z.string().min(1).describe("The work or subject, e.g. \"Las Meninas\""),
     author: z.string().min(1).describe("Artist or photographer"),
     license: z.string().min(1).describe("e.g. \"Public domain\", \"CC BY-SA 4.0\""),
-    source: z.string().url().describe("Page the image came from"),
+    source: z
+      .string()
+      .url()
+      .regex(/^https?:\/\//, "an http(s) link")
+      .describe("Page the image came from"),
   })
   .partial();
 export type ImageCredit = z.infer<typeof ImageCreditSchema>;

@@ -27,6 +27,7 @@ agents", and the `<head>` carries
 | `publish_flashcard_deck` | Validate, save, and open a draft. |
 | `import_flashcards` | Save a complete deck in one call. |
 | `generate_flashcards` | Have the server's Claude write a deck (needs a key). |
+| `share_flashcard_deck` | A short link (`/d/<id>`) to a saved deck, stored in Vercel Blob (needs a store). |
 | `play_flashcards` | Open the quiz on a deck. |
 | `delete_flashcard_deck` | Remove a saved deck or draft. |
 

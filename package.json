@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "check-deck": "node scripts/check-deck.mts",
     "generate": "node scripts/generate-deck.mts",
     "find-images": "node scripts/find-images.mts"
@@ -31,6 +32,7 @@
     "@tabler/icons-react": "^3.44.0",
     "@untitledui/icons": "^0.0.22",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/blob": "^2.8.0",
     "border-beam": "^1.3.0",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
@@ -48,12 +50,14 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/canvas-confetti": "^1.9.0",
-    "@types/node": "^20",
+    "@types/node": "^24.13.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.1"
   }
 }

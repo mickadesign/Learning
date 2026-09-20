@@ -31,6 +31,7 @@ import {
   type QuizQuestion,
 } from "./deck";
 import { attachPicture, creditFor, findImages } from "./image-search";
+import { shareDeck, SharingUnavailable } from "./share";
 import {
   getDraft,
   listDrafts,
@@ -72,8 +73,9 @@ export interface FlashcardToolHandlers {
   /** Have the server's AI plan and write a deck; resolves when the first
    *  level is playable and the quiz is open (the rest keep arriving). */
   generateDeck: (topic: string, notes?: string) => Promise<Deck>;
-  /** Open the quiz on a deck. */
-  openDeck: (deck: Deck) => void;
+  /** Open the quiz on a deck. `fresh` marks a deck made just now (published
+   *  or imported by the agent), which earns the unlock moment. */
+  openDeck: (deck: Deck, options?: { fresh?: boolean }) => void;
   /** Open the quiz for a slug (the built-in deck when omitted). */
   playDeck: (slug?: string) => Deck;
   /** Playable decks: built-in plus saved, with best scores. */
@@ -195,7 +197,7 @@ function issues(error: z.ZodError): string {
 
 // ── Tool definitions ────────────────────────────────────────
 
-interface ToolDef {
+export interface ToolDef {
   name: string;
   title: string;
   description: string;
@@ -329,6 +331,23 @@ const WORKFLOW = [
   "4. publish_flashcard_deck — validates, saves the deck in this browser, and opens the quiz.",
   "Or: import_flashcards with a complete deck; or generate_flashcards to have the site's own AI write one (needs the server to have a key).",
 ];
+
+/** The tool definitions, for tests and for anything that wants to call
+ *  them without the page: each has a name, a JSON input schema, and an
+ *  `execute(input)`. The activity wrapper is applied here too. */
+export function flashcardTools(h: () => FlashcardToolHandlers): ToolDef[] {
+  return tools(h).map(withActivity);
+}
+
+/** The current agent activity, for tests and debugging. */
+export function getAgentActivity(): AgentActivity {
+  return activity;
+}
+
+/** Back to idle, for tests. */
+export function resetAgentActivity() {
+  setActivity(IDLE);
+}
 
 function tools(h: () => FlashcardToolHandlers): ToolDef[] {
   return [
@@ -603,7 +622,7 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
         const deck = parseDeck(draft);
         saveDeck(deck);
         removeDraft(slug);
-        if (open) h().openDeck(deck);
+        if (open) h().openDeck(deck, { fresh: true });
         setActivity({ phase: "done", deck, at: Date.now() });
         const total = deck.levels.reduce((sum, l) => sum + l.questions.length, 0);
         return text(
@@ -639,7 +658,7 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
           replace && existing && !builtIn ? parsed.slug : uniqueSlug(parsed.slug, takenSlugs(h()));
         const deck = { ...parsed, slug };
         saveDeck(deck);
-        h().openDeck(deck);
+        h().openDeck(deck, { fresh: true });
         setActivity({ phase: "done", deck, at: Date.now() });
         return text(
           `Imported and opened "${deck.title}" (${slug}).${
@@ -647,6 +666,35 @@ function tools(h: () => FlashcardToolHandlers): ToolDef[] {
           }`,
           { slug, title: deck.title, pictures: { missing } }
         );
+      },
+    },
+
+    {
+      name: "share_flashcard_deck",
+      title: "Share a deck by link",
+      description:
+        "A link anyone can open to play a deck saved in this browser: the deck is stored on the site under a short URL (/d/<id>) that unfurls with its headline and pictures. The site does this on its own while the visitor plays a deck the first time; call it to have the link sooner, or to hand it to the visitor. Needs the deployment to have a blob store — the error says so otherwise.",
+      inputSchema: {
+        type: "object",
+        properties: { slug: { type: "string", description: "A saved deck's slug (list_flashcard_decks)." } },
+        required: ["slug"],
+      },
+      async execute(input) {
+        const { slug } = SlugInput.parse(input);
+        const deck = h().findDeck(slug);
+        if (!deck) throw new Error(`No deck "${slug}". list_flashcard_decks shows the decks; drafts must be published first.`);
+        if (h().listDecks().find((d) => d.slug === slug)?.builtIn) {
+          const url = `${window.location.origin}/`;
+          return text(`"${deck.title}" is the built-in deck; it lives at ${url}.`, { slug, url });
+        }
+        try {
+          const url = await shareDeck(deck);
+          return text(`"${deck.title}" is shareable at ${url} — anyone who opens it can play.`, { slug, url });
+        } catch (error) {
+          if (error instanceof SharingUnavailable)
+            throw new Error(`${error.message} The deck is saved in this browser only.`);
+          throw error;
+        }
       },
     },
 

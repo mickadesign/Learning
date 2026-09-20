@@ -184,6 +184,18 @@ Input: `{ deck, replace? }` — a complete deck matching the JSON Schema from
 uses the slug, a new slug is chosen unless `replace` is true. Opens the quiz
 on it. `structuredContent`: `{ slug, title, pictures: { missing: string[] } }`.
 
+### `share_flashcard_deck`
+
+Input: `{ slug }` — a saved deck's slug.
+
+Stores the deck on the site and returns a short link anyone can open to
+play it (`/d/<id>`); the link unfurls with the deck's headline and
+pictures. The site shares a deck on its own the first time the visitor
+plays it and shows the link with the result, so call this when you want
+the link sooner or want to hand it over yourself. Drafts must be published
+first. Fails with a clear message when the deployment has no blob store.
+`structuredContent`: `{ slug, url }`.
+
 ### `generate_flashcards`
 
 Input: `{ topic, notes? }`.

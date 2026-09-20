@@ -10,7 +10,6 @@ import {
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  shareTextFor,
   verdictFor,
   type ChoiceQuestion,
   type Deck,
@@ -22,6 +21,8 @@ import {
 } from "@/lib/deck";
 import { Button } from "@/components/ui/button";
 import { Confetti } from "@/components/quiz/confetti";
+import { getShareLink } from "@/lib/deck-store";
+import { shareDeck } from "@/lib/share";
 import {
   TIMER_RING_CIRCUMFERENCE,
   TIMER_RING_RADIUS,
@@ -30,7 +31,7 @@ import {
 import { useProximityHover, type ItemRect } from "@/hooks/use-proximity-hover";
 import { useTouchPrimary } from "@/hooks/use-touch-primary";
 import { deckThumbnails } from "@/lib/deck-thumbnails";
-import { useIcon, type IconComponent } from "@/lib/icon-context";
+import { useIcon } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { cn } from "@/lib/utils";
@@ -397,24 +398,6 @@ function ImageCaption({ credit }: { credit?: ImageCredit }) {
     </motion.p>
   );
 }
-
-/** The X logomark — none of the icon libraries carry it, so it's inlined.
- *  Shaped as an IconComponent so Button's `leadingIcon` slot accepts it; the
- *  glyph is inset 10% to optically match the stroke icons' built-in padding. */
-const XLogo: IconComponent = ({ size = 14, className }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className={className}
-    aria-hidden
-  >
-    <g transform="translate(2.4 2.4) scale(0.8)">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z" />
-    </g>
-  </svg>
-);
 
 /** Subtle keyboard-shortcut label on the right edge of an answer row. */
 function KeyHint({ n }: { n: number }) {
@@ -834,16 +817,21 @@ interface QuizModalProps {
   onOpenChange: (open: boolean) => void;
   /** The deck to play. Remount (key by slug) when it changes. */
   deck: Deck;
-  /** Link shared scores to the prerendered /s/[level]/[score] pages. Only
-   *  the built-in deck has them; other decks share the site root. */
-  shareLinks?: boolean;
+  /** Decks written in this browser: get them a share link (/d/<id>) in the
+   *  background while the first run plays, and show it with the result. */
+  shareable?: boolean;
+  /** The deck was made just now: the intro is its unlock moment, with the
+   *  fireworks and the "Deck unlocked" line. Off for a deck opened from a
+   *  link, the list, or on a later visit. */
+  celebrate?: boolean;
 }
 
 export function QuizModal({
   open,
   onOpenChange,
   deck,
-  shareLinks = false,
+  shareable = false,
+  celebrate = false,
 }: QuizModalProps) {
   // The deck drives everything below: levels, pass mark, countdown length.
   const QUIZ_LEVELS = deck.levels;
@@ -867,6 +855,13 @@ export function QuizModal({
   const [showTimedIntro, setShowTimedIntro] = useState(false);
   // Whether the run that just ended unlocked the next set of cards.
   const [justUnlocked, setJustUnlocked] = useState(false);
+  // The deck's share link, made while the player answers so it is ready
+  // the moment the run ends. One request per deck, deduplicated in
+  // shareDeck; quietly skipped when the deployment has no store.
+  const requestShareLink = () => {
+    if (!shareable || getShareLink(deck)) return;
+    shareDeck(deck).catch(() => {});
+  };
   const [confirmExit, setConfirmExit] = useState(false);
   const [best, setBest] = useState<BestScores>({});
   // Guards resolve/timeout against double-firing (and against Strict Mode
@@ -914,6 +909,7 @@ export function QuizModal({
     setConfirmExit(false);
     setShowTimedIntro(QUIZ_LEVELS[i].timed);
     setView("run");
+    requestShareLink();
   };
 
   const resolve = useCallback(
@@ -955,6 +951,9 @@ export function QuizModal({
     }
     // Run finished — persist the best score. A pass on a level that wasn't
     // passed before is what unlocks the next set; a replayed pass isn't.
+    // And a deck that couldn't be shared at the start (still being written)
+    // gets its link now, for the result.
+    requestShareLink();
     const prev = best[level.id] ?? -1;
     setJustUnlocked(prev < PASS_SCORE && score >= PASS_SCORE);
     const isNewBest = score > prev;
@@ -1033,57 +1032,9 @@ export function QuizModal({
     0,
     QUIZ_LEVELS.findIndex((lv) => (best[lv.id] ?? 0) < PASS_SCORE)
   );
-  const cardCount = visibleLevels.reduce((n, lv) => n + lv.questions.length, 0);
-
-  // Opens X's composer pre-filled with the score-as-a-challenge line. The
-  // link targets the score's share page (/s/[level]/[score]) so the post
-  // unfurls with its per-score OG card; built on the live origin, so it stays
-  // correct across deploys.
-  //
-  // On touch devices the https intent link is a trap: the X app claims it as
-  // a universal link but renders it in its in-app webview instead of the
-  // native composer. The app's own twitter:// scheme does open the native
-  // sheet, so mobile tries that first and falls back to the web intent only
-  // if nothing takes over the page (app not installed).
-  const shareScore = () => {
-    const lv = QUIZ_LEVELS[bestLevelIndex];
-    const text = shareTextFor(deck, lv, best[lv.id]!);
-    const pageUrl = shareLinks
-      ? `${window.location.origin}/s/${lv.id}/${best[lv.id]}`
-      : `${window.location.origin}/`;
-    const webIntent = new URL("https://x.com/intent/post");
-    webIntent.searchParams.set("text", text);
-    webIntent.searchParams.set("url", pageUrl);
-
-    if (!touchPrimary) {
-      window.open(webIntent.toString(), "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    // The scheme has no separate url param — the link rides in the message.
-    const appIntent = `twitter://post?message=${encodeURIComponent(
-      `${text} ${pageUrl}`
-    )}`;
-    const fallback = window.setTimeout(() => {
-      // Still visible after a beat = the scheme went nowhere. Same-tab
-      // navigation, because a popup this long after the tap gets blocked.
-      if (document.visibilityState === "visible")
-        window.location.href = webIntent.toString();
-    }, 1500);
-    // App did take over (page hidden or frozen) — cancel the fallback so it
-    // can't fire under the composer or when the player returns.
-    window.addEventListener(
-      "visibilitychange",
-      () => {
-        if (document.visibilityState === "hidden") clearTimeout(fallback);
-      },
-      { once: true }
-    );
-    window.addEventListener("pagehide", () => clearTimeout(fallback), {
-      once: true,
-    });
-    window.location.href = appIntent;
-  };
+  // The intro counts the set about to play, not the whole deck: a run is one
+  // level's cards, and the next set is announced when it unlocks.
+  const cardCount = QUIZ_LEVELS[startIndex].questions.length;
 
   const current = run?.[qIndex];
 
@@ -1172,17 +1123,19 @@ export function QuizModal({
                   }}
                   className="flex flex-1 flex-col items-center text-center"
                 >
-                  {/* The unlock moment centers in the space above the pinned
-                      CTA: the deck springs up as a fan of cards while a burst
-                      of confetti settles around it. */}
-                  <div className="relative flex flex-1 flex-col items-center justify-center">
-                    <Confetti />
+                  {/* The unlock moment sits high in the panel, under the close
+                      control, rather than floating mid-frame: the deck springs
+                      up as a fan of cards while fireworks fill the page. */}
+                  <div className="relative flex flex-1 flex-col items-center justify-start pt-8">
+                    {celebrate && <Confetti />}
                     <DeckStack images={thumbnails} />
-                    <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
-                      <DrawnCheck size={16} />
-                      Deck unlocked
-                    </p>
-                    <h2 className="mt-2 max-w-[20ch] font-heading text-[28px] leading-[1.1] text-foreground">
+                    {celebrate && (
+                      <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
+                        <DrawnCheck size={16} />
+                        Deck unlocked
+                      </p>
+                    )}
+                    <h2 className="mt-2 max-w-[18ch] font-heading text-[36px] leading-[1.05] text-foreground">
                       {deck.headline}
                     </h2>
                     <p className="mt-3 max-w-[32ch] text-[15px] leading-relaxed text-muted-foreground">
@@ -1197,7 +1150,7 @@ export function QuizModal({
                     )}
                   </div>
 
-                  {/* Start pins to the bottom; share waits for a first score. */}
+                  {/* Start pins to the bottom. */}
                   <div className="w-full space-y-2">
                     <Button
                       variant="primary"
@@ -1212,35 +1165,7 @@ export function QuizModal({
                           ? "Keep going"
                           : "Play again"}
                     </Button>
-                    {bestLevelIndex >= 0 && (
-                      <Button
-                        variant="secondary"
-                        size="lg"
-                        className="w-full rounded-full"
-                        leadingIcon={XLogo}
-                        onClick={shareScore}
-                      >
-                        Share your score
-                      </Button>
-                    )}
                   </div>
-                  {deck.author && (
-                    <p className="pt-3 text-center text-[13px] text-muted-foreground">
-                      Created by{" "}
-                      {deck.author.url ? (
-                        <a
-                          href={deck.author.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="transition-colors duration-80 hover:text-foreground"
-                        >
-                          {deck.author.name}
-                        </a>
-                      ) : (
-                        deck.author.name
-                      )}
-                    </p>
-                  )}
                 </motion.div>
               )}
 
@@ -1343,7 +1268,7 @@ export function QuizModal({
                   <div className="relative flex flex-1 flex-col items-center justify-center">
                     {passed && <Confetti />}
                     {passed && (
-                      <h2 className="mb-8 font-heading text-[28px] leading-none text-foreground">
+                      <h2 className="mb-8 font-heading text-[36px] leading-none text-foreground">
                         Congratulations!
                       </h2>
                     )}

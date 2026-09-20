@@ -6,7 +6,8 @@ import { DECK } from "@/data";
 import type { Deck } from "@/lib/deck";
 import { buildDeck, GenerationUnavailable, type DeckBuild } from "@/lib/create-deck";
 import { bestScoresFor, useSavedDecks } from "@/lib/deck-store";
-import { useAgentActivity, useWebMcpTools, type DeckSummary } from "@/lib/webmcp";
+import { adoptSharedDeck } from "@/lib/adopt-shared-deck";
+import { resetAgentActivity, useAgentActivity, useWebMcpTools, type DeckSummary } from "@/lib/webmcp";
 import { REPO_URL } from "@/lib/site";
 import { spring } from "@/lib/springs";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Confetti } from "@/components/quiz/confetti";
 import { WanderingCursor } from "@/components/wandering-cursor";
 import { DeckList } from "@/components/deck-list";
+import { ShareLinkButton } from "@/components/share-link-button";
 import { AgentPromptButton } from "@/components/agent-prompt-button";
 import { FallingLinesBackdrop } from "@/components/falling-lines-backdrop";
 import { LandingCardFan } from "@/components/landing-card-fan";
@@ -59,7 +61,13 @@ const AGENT_QUIET_MS = 90_000;
 /** The landing: one question, the agent prompt that answers it, the decks
  *  on this page, and the quiz. Every deck — the built-in one and the ones
  *  written here — plays in the same modal. */
-export function HomeScreen() {
+interface HomeScreenProps {
+  /** A deck opened from its share link (/d/<id>): saved into this browser
+   *  next to the visitor's own decks, then opened. */
+  shared?: { deck: Deck; id: string };
+}
+
+export function HomeScreen({ shared }: HomeScreenProps = {}) {
   const saved = useSavedDecks();
   // Newest first, so a deck just written sits at the top of the list.
   const decks = useMemo(() => [DECK, ...[...saved].reverse()], [saved]);
@@ -69,10 +77,29 @@ export function HomeScreen() {
   const [build, setBuild] = useState<DeckBuild | null>(null);
   const building = build?.status.phase === "planning" || build?.status.phase === "writing";
 
-  const openDeck = useCallback((deck: Deck) => {
+  // Whether the open quiz is the deck's first showing, right after it was
+  // made here: that open gets the confetti and the "Deck unlocked" line.
+  // A deck opened from a link, the list, or later on is simply opened.
+  const [fresh, setFresh] = useState(false);
+  const openDeck = useCallback((deck: Deck, options?: { fresh?: boolean }) => {
     setActiveDeck(deck);
+    setFresh(!!options?.fresh);
     setQuizOpen(true);
   }, []);
+
+  // A shared deck lands in this browser's collection under its own slug —
+  // or a fresh one if that slug is taken by a different deck — remembers
+  // the link it came from, and opens. Once per page load.
+  const sharedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!shared || sharedRef.current === shared.id) return;
+    sharedRef.current = shared.id;
+    // The store, not `decks`: during hydration the React snapshot of the
+    // saved decks is still the server's empty one.
+    const deck = adoptSharedDeck(shared, DECK, window.location.origin);
+    // Not in the effect's own tick: opening is a state change.
+    void Promise.resolve().then(() => openDeck(deck));
+  }, [shared, openDeck]);
 
   const playDeck = useCallback(
     (slug?: string): Deck => {
@@ -105,7 +132,7 @@ export function HomeScreen() {
           if (b.deck) setActiveDeck((cur) => (cur.slug === b.deck!.slug ? b.deck! : cur));
         },
         onPlayable: (deck) => {
-          openDeck(deck);
+          openDeck(deck, { fresh: true });
           playable?.(deck);
         },
       });
@@ -206,16 +233,18 @@ export function HomeScreen() {
         : agentExpected && !expectedGaveUp
           ? "expected"
           : null;
-  // The headline follows the work: what is being created while the agent
-  // writes, what is ready once it has published.
+  // The headline follows the work: who has just arrived, what is being
+  // created while the agent writes, what is ready once it has published.
   const headline =
-    agentState === "working" && activity.phase === "working"
+    agentState === "expected"
+      ? "Psst. Your agent is waiting on you."
+      : agentState === "working" && activity.phase === "working"
       ? activity.title
         ? `Creating flashcards for ${activity.title}…`
         : "Creating your flashcards…"
       : agentState === "done" && activity.phase === "done"
         ? `Flashcards for ${activity.deck.title} are ready.`
-        : "Expand your human’s memory";
+        : "Hey agent, make your human smarter.";
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-surface-1 px-6">
@@ -227,7 +256,9 @@ export function HomeScreen() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         // 480px: wide enough for "Creating your flashcards…" on one line.
-        className="relative z-10 w-full max-w-[480px] py-24"
+        // A flex column so the status line can step above the deck list
+        // while the agent is expected (`order-last` on the list below).
+        className="relative z-10 flex w-full max-w-[480px] flex-col py-24"
       >
         {!build && !agentState && (
           <LandingCardFan
@@ -243,10 +274,12 @@ export function HomeScreen() {
         {activity.phase === "working" && agentState === "working" && (
           <Confetti key={activity.since} />
         )}
-        {/* The agent's hand: a big cursor drifting over the page while it
-            writes. */}
+        {/* The agent's hand: a big cursor drifting over the page from the
+            moment it lands until it has published. */}
         <AnimatePresence>
-          {agentState === "working" && <WanderingCursor key="cursor" />}
+          {(agentState === "expected" || agentState === "working") && (
+            <WanderingCursor key="cursor" />
+          )}
         </AnimatePresence>
         <AnimatePresence mode="wait" initial={false}>
           <motion.h1
@@ -275,12 +308,14 @@ export function HomeScreen() {
           {decks.length > 1 && agentState !== "working" && (
             <motion.div
               key="decks"
-              className="mt-8"
+              // While the agent is expected the status line reads first and
+              // the decks follow it.
+              className={cn(agentState === "expected" ? "order-last mt-4" : "mt-8")}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1, transition: { duration: spring.moderate.duration } }}
               exit={{ opacity: 0, transition: { duration: spring.moderate.exit.duration } }}
             >
-              <DeckList decks={decks} onPlay={(slug) => playDeck(slug)} />
+              <DeckList decks={decks} builtInSlug={DECK.slug} onPlay={(slug) => playDeck(slug)} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -302,7 +337,9 @@ export function HomeScreen() {
             transition={{ duration: spring.moderate.duration, ease: "easeOut" }}
             className={cn(
               "flex min-h-[28px] items-center gap-3 text-[14px] leading-snug text-muted-foreground",
-              decks.length > 1 && agentState !== "working"
+              agentState === "expected"
+                ? "mt-8"
+                : decks.length > 1 && agentState !== "working"
                 ? "mt-4"
                 : build || agentState
                   ? "mt-8"
@@ -327,7 +364,9 @@ export function HomeScreen() {
                 )}
               </>
             ) : agentState === "expected" ? (
-              <span>Your agent is on this page. Waiting for its first move</span>
+              // The agent has landed and is asking, in its own chat, what
+              // the human wants to learn: send them back there.
+              <span>Your agent is asking what you want to learn. Answer in the chat.</span>
             ) : agentState === "working" ? (
               // The headline's shimmer and the wandering cursor carry the
               // state; the line stays empty (its height is reserved).
@@ -338,31 +377,64 @@ export function HomeScreen() {
               <>
                 <span>“{activity.deck.title}” is ready.</span>
                 {!quizOpen && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="ml-auto shrink-0 rounded-full"
-                    onClick={() => openDeck(activity.deck)}
-                  >
-                    Play
-                  </Button>
+                  <span className="ml-auto flex shrink-0 items-center gap-1">
+                    <ShareLinkButton deck={activity.deck} />
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => openDeck(activity.deck)}
+                    >
+                      Play
+                    </Button>
+                  </span>
                 )}
               </>
             ) : (
               // The page is agent-first: hand the job to the visitor's own
               // agent. The prompt sends it here to use the WebMCP tools.
-              <div className="flex flex-col items-start gap-9">
+              // mt-2 opens the gap under the headline a touch wider than the
+              // status lines get.
+              <div className="mt-2 flex flex-col items-start gap-9">
                 <span>
-                  Ask what they want to learn, then build beautiful flashcards.
+                  Ask what your human want to learn, then build beautiful flashcards.
                 </span>
-                <AgentPromptButton />
+                {/* Pulled left by the pill's border, padding and the copy
+                    button's own inset, so the copy icon lines up with the
+                    text above instead of the pill's edge. */}
+                <AgentPromptButton className="-ml-[19px]" />
               </div>
             )}
           </motion.div>
         </AnimatePresence>
+
+        {/* The nudge onward, once a deck is done: another deck is one prompt
+            away. The link brings the prompt back. */}
+        <AnimatePresence initial={false}>
+          {agentState === "done" && (
+            <motion.p
+              key="nudge"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0, transition: { duration: spring.moderate.duration, ease: "easeOut" } }}
+              exit={{ opacity: 0, transition: { duration: spring.fast.exit.duration } }}
+              className="mt-3 text-[14px] leading-snug text-muted-foreground"
+            >
+              Curious about something else?{" "}
+              <button
+                type="button"
+                onClick={resetAgentActivity}
+                className="cursor-pointer text-foreground underline decoration-foreground/30 underline-offset-2 transition-colors duration-80 hover:decoration-foreground"
+              >
+                Ask your agent for another deck
+              </button>
+            </motion.p>
+          )}
+        </AnimatePresence>
       </motion.main>
 
-      <footer className="absolute bottom-6 left-6 z-10 flex items-center gap-1.5 text-[13px] text-muted-foreground">
+      {/* Stacked on phones, where a row would run under the theme toggle;
+          one line with separators from the sm breakpoint up. */}
+      <footer className="absolute bottom-6 left-6 z-10 flex flex-col items-start gap-1.5 text-[13px] text-muted-foreground sm:flex-row sm:items-center">
         {DECK.author && (
           <>
             {DECK.author.url ? (
@@ -377,7 +449,7 @@ export function HomeScreen() {
             ) : (
               <span>{DECK.author.name}</span>
             )}
-            {REPO_URL && <span aria-hidden>·</span>}
+            {REPO_URL && <span aria-hidden className="hidden sm:inline">·</span>}
           </>
         )}
         {REPO_URL && (
@@ -390,7 +462,7 @@ export function HomeScreen() {
             Free &amp; Open Source
           </a>
         )}
-        <span aria-hidden>·</span>
+        <span aria-hidden className="hidden sm:inline">·</span>
         {/* Agents on this page get tools on document.modelContext; the
             reference for them (and curious humans) is a plain markdown file. */}
         <a href="/agents.md" className="transition-colors duration-80 hover:text-foreground">
@@ -407,7 +479,12 @@ export function HomeScreen() {
         open={quizOpen}
         onOpenChange={setQuizOpen}
         deck={activeDeck}
-        shareLinks={activeDeck.slug === DECK.slug}
+        celebrate={fresh}
+        // Not while this deck is still being written: a link is forever,
+        // and it would point at the levels that had landed so far.
+        shareable={
+          activeDeck.slug !== DECK.slug && !(building && build?.deck?.slug === activeDeck.slug)
+        }
       />
     </div>
   );

@@ -25,12 +25,25 @@ site shuffles.
   Behind `npm run find-images`, the `find_flashcard_images` tool, and the
   generator's picture step. Cards carry the credit in `imageCredit`; the
   quiz shows it as a caption on the reveal.
-- `src/lib/webmcp.ts` — eleven WebMCP tools on `document.modelContext`: read
+- `src/lib/webmcp.ts` — twelve WebMCP tools on `document.modelContext`: read
   the format, find images, start a draft, add cards, publish, import,
   generate, list, get, play, delete. Drafts live in `deck-store.ts` next to saved decks.
   The served reference is `public/agents.md` (plus `/llms.txt`); keep it in
   step with the tools and with `EXAMPLE_CARDS` / `AUTHORING_RULES` /
   `HOUSE_STYLE` in `src/lib/deck.ts`. Wiring notes: `docs/webmcp.md`.
+
+## Sharing
+
+A deck written in a browser becomes a link through Vercel Blob:
+`POST /api/share` validates the deck, stores it as `decks/<id>.json` and
+answers with `/d/<id>`; that page (`src/app/d/[id]/`) loads the deck, saves
+it into the visitor's browser and opens the quiz, with a generated OG card
+next door. `src/lib/share.ts` is the browser side (one request per deck,
+link kept in `deck-store.ts` with a content fingerprint); the quiz shares a
+deck in the background when its first run starts and shows the link with
+the result, and `share_flashcard_deck` gives agents the same link. Needs
+`BLOB_READ_WRITE_TOKEN` (a linked Blob store); without it sharing is
+quietly unavailable.
 
 ## The engine
 
@@ -66,8 +79,11 @@ site shuffles.
 - Motion derives from `spring.fast/moderate/slow` in `src/lib/springs.ts`;
   no hand-written durations. Animate `transform`/`opacity` only (grid-track
   collapses are the sanctioned exception).
-- `npm run typecheck && npm run lint && npm run check-deck` before calling
-  work done. `npm run build` prerenders every share page and fails on an
+- `npm run typecheck && npm run lint && npm run test && npm run check-deck`
+  before calling work done. Tests are vitest (`src/**/*.test.ts`, jsdom
+  where a module touches the page); the WebMCP tools are tested through
+  `flashcardTools()` with fake handlers, the share route with a mocked
+  blob store. `npm run build` prerenders every share page and fails on an
   invalid deck.
 
 <!-- BEGIN:nextjs-agent-rules -->

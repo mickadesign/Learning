@@ -137,3 +137,49 @@ export function removeDraft(slug: string) {
   delete drafts[slug];
   writeDrafts(drafts);
 }
+
+// ── Share links ─────────────────────────────────────────────
+// The short link a deck was shared at (/d/<id>), kept next to the deck and
+// tied to its content: a deck that changes after sharing gets a new link,
+// the old one keeps serving the version people were sent.
+
+const SHARES_KEY = "flashcards:shares:v1";
+
+interface ShareRecord {
+  url: string;
+  fingerprint: string;
+}
+
+/** A cheap content hash (djb2 over the JSON), enough to tell "this deck"
+ *  from "this deck with a card changed". */
+export function deckFingerprint(deck: Deck): string {
+  const text = JSON.stringify(deck);
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return `${text.length}:${(h >>> 0).toString(36)}`;
+}
+
+function readShares(): Record<string, ShareRecord> {
+  try {
+    const raw = localStorage.getItem(SHARES_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, ShareRecord>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** The link this exact deck was shared at, if any. */
+export function getShareLink(deck: Deck): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const record = readShares()[deck.slug];
+  return record && record.fingerprint === deckFingerprint(deck) ? record.url : undefined;
+}
+
+export function setShareLink(deck: Deck, url: string) {
+  try {
+    localStorage.setItem(
+      SHARES_KEY,
+      JSON.stringify({ ...readShares(), [deck.slug]: { url, fingerprint: deckFingerprint(deck) } })
+    );
+  } catch {}
+}
