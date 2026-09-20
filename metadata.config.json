@@ -1,0 +1,14 @@
+{
+  "title": "Human Memory",
+  "tagline": "Hey agent, make your human smarter. Flashcards written by your AI agent, one prompt away.",
+  "colors": {
+    "background": "#171717",
+    "foreground": "#fafafa",
+    "accent": "#a3a3a3"
+  },
+  "logo": "src/app/icon.svg",
+  "faviconSrc": "src/app/icon.svg",
+  "outputDir": "public/metadata",
+  "font": "Inter",
+  "url": "https://humanmemory.dev"
+}
