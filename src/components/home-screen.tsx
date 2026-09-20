@@ -263,7 +263,6 @@ export function HomeScreen({ shared }: HomeScreenProps = {}) {
         {!build && !agentState && (
           <LandingCardFan
             levels={DECK.levels}
-            timerSeconds={DECK.timerSeconds}
           />
         )}
 
@@ -402,7 +401,9 @@ export function HomeScreen({ shared }: HomeScreenProps = {}) {
                 {/* Pulled left by the pill's border, padding and the copy
                     button's own inset, so the copy icon lines up with the
                     text above instead of the pill's edge. */}
-                <AgentPromptButton className="-ml-[19px]" />
+                {/* Pulled left by the border and the icon's inset so the
+                    label sits flush with the headline. */}
+                <AgentPromptButton className="-ml-[15px]" />
               </div>
             )}
           </motion.div>

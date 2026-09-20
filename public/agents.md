@@ -7,7 +7,7 @@ page registers tools on `document.modelContext` (the
 loads. This file lists every one of them, what each takes and returns, and
 the shortest path to a finished deck.
 
-- Site: the page you are on. Source: <https://github.com/mickadesign/Learning>.
+- Site: the page you are on. Source: <https://github.com/mickadesign/humanmemory>.
 - Protocol: WebMCP. `await document.modelContext.getTools()` lists the tools;
   your host calls them. In a browser without native support the page installs
   a polyfill (`@mcp-b/global`), so the tools are always there.

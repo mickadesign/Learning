@@ -57,9 +57,9 @@ quietly unavailable.
   `src/components/quiz/confetti.tsx`: canvas-confetti fireworks in the
   theme's monochrome, portaled over the whole page, off under reduced
   motion.
-- `src/components/agent-prompt-button.tsx` — the "Copy agent prompt" pill
-  shown when the server has no key (copy + open in Claude / Codex / Cursor);
-  the brief is `src/lib/agent-prompt.ts`, the marks `agent-marks.tsx`.
+- `src/components/agent-prompt-button.tsx` — the "Copy prompt" pill: one
+  button that copies the brief in `src/lib/agent-prompt.ts` for the visitor
+  to paste into their own agent.
 - `src/components/home-screen.tsx` — the landing page, agent-first: the
   headline (balanced; shimmers while an agent writes), the "Copy agent
   prompt" pill, a status line that follows the agent's tool calls

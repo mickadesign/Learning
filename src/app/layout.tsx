@@ -7,13 +7,16 @@ import { DECK } from "@/data";
 import { ThemeProvider, themeInitScript } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  // Absolute base for OG/twitter image URLs (the quiz share cards). Vercel
-  // fills the production domain; NEXT_PUBLIC_SITE_URL overrides it elsewhere.
+  // Absolute base for OG/twitter image URLs (the quiz share cards).
+  // NEXT_PUBLIC_SITE_URL overrides; otherwise Vercel's production domain
+  // (humanmemory.dev), falling back to localhost in development.
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ??
       (process.env.VERCEL_PROJECT_PRODUCTION_URL
         ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-        : "http://localhost:3000")
+        : process.env.NODE_ENV === "production"
+          ? "https://humanmemory.dev"
+          : "http://localhost:3000")
   ),
   title: `Flashcards — ${DECK.title}`,
   description: "Learning new things should be fun. Type a topic and play a quiz written for you.",

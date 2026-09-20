@@ -36,7 +36,7 @@ export interface LookupOptions {
   signal?: AbortSignal;
 }
 
-const USER_AGENT = "Flashcards/1.0 (https://github.com/mickadesign/Learning)";
+const USER_AGENT = "Flashcards/1.0 (https://github.com/mickadesign/humanmemory)";
 
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T | null> {
   const headers: Record<string, string> = { accept: "application/json" };

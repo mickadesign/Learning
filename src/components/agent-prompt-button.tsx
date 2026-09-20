@@ -11,18 +11,16 @@ import {
 } from "react";
 import { motion, useReducedMotion, type Transition } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ClaudeMark, CodexMark, CursorMark } from "@/components/agent-marks";
 import { useIcon } from "@/lib/icon-context";
 import type { IconComponentProps } from "@/lib/icon-map";
 import { agentPrompt } from "@/lib/agent-prompt";
 import { spring } from "@/lib/springs";
 import { cn } from "@/lib/utils";
 
-// The pill: a "Copy agent prompt" button, then one mark per agent that
-// copies the prompt and opens the agent — with the prompt prefilled where
-// the agent has a URL for that. The copy feedback is the Fluid
-// Functionalism Copy-prompt button's: the label never changes, only the
-// leading icon turns into a check for 2s.
+// One "Copy prompt" button. The visitor pastes the prompt into whichever
+// agent they use. The copy feedback is the Fluid Functionalism
+// Copy-prompt button's: the label never changes, only the leading icon
+// turns into a check for 2s.
 
 /** Whether the prompt was just copied — read by the leading icon, which the
  *  Button renders from a component type, so the state can't ride a prop. */
@@ -73,72 +71,6 @@ function CopyPromptIcon({ strokeWidth, className }: IconComponentProps) {
   );
 }
 
-interface Agent {
-  name: string;
-  Mark: typeof ClaudeMark;
-  /** Where the mark goes. Claude and Cursor take the prompt in the URL;
-   *  Codex has no prefill, so the copy the click just made is the way in. */
-  href: (prompt: string) => string;
-  prefills: boolean;
-  /** For app schemes: where to go when nothing on this machine handles
-   *  the scheme (the app isn't installed). */
-  fallback?: string;
-}
-
-const AGENTS: Agent[] = [
-  {
-    name: "Claude",
-    Mark: ClaudeMark,
-    href: (p) => `https://claude.ai/new?q=${encodeURIComponent(p)}`,
-    prefills: true,
-  },
-  {
-    // The Codex desktop app registers the `codex` scheme; threads/new is
-    // the entry point its own sign-in page redirects to. The prompt rides
-    // the clipboard. Without the app, the web page offers the download.
-    name: "Codex",
-    Mark: CodexMark,
-    href: () => "codex://threads/new",
-    prefills: false,
-    fallback: "https://chatgpt.com/codex",
-  },
-  {
-    // Cursor's web deeplink, not the cursor:// scheme: the page it opens
-    // launches Cursor with the prompt itself, and stays behind with the
-    // prompt, an "Open in Cursor" retry and a Copy button. The scheme plus
-    // a visibility-timed fallback misfired on desktop — a tab stays
-    // "visible" when another app comes to the front — and sent visitors
-    // to cursor.com with nothing attached.
-    name: "Cursor",
-    Mark: CursorMark,
-    href: (p) => {
-      const url = new URL("https://cursor.com/link/prompt");
-      url.searchParams.set("text", p);
-      return url.toString();
-    },
-    prefills: true,
-  },
-];
-
-/** An app scheme that nothing handles fails silently. Same trick as the
- *  quiz's share button: if nothing has taken over a beat later, the app
- *  isn't installed — go to the web fallback instead. On desktop the page
- *  never hides when an app comes to the front, it only loses focus, so the
- *  window's blur cancels the timer too; it can't fire behind the app. */
-function openWithFallback(href: string, fallback: string) {
-  const timer = window.setTimeout(() => {
-    if (document.visibilityState === "visible" && document.hasFocus())
-      window.location.href = fallback;
-  }, 2500);
-  const cancel = () => window.clearTimeout(timer);
-  window.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") cancel();
-  }, { once: true });
-  window.addEventListener("pagehide", cancel, { once: true });
-  window.addEventListener("blur", cancel, { once: true });
-  window.location.href = href;
-}
-
 async function writeClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
@@ -171,8 +103,8 @@ const readNothing = () => null;
 
 export function AgentPromptButton({ className }: { className?: string }) {
   // The prompt names this site's URL, so it can only be built in the
-  // browser; on the server (and the hydrating render) the marks are plain
-  // and the copy button waits for the real origin.
+  // browser; on the server (and the hydrating render) the button waits
+  // for the real origin.
   const origin = useSyncExternalStore(subscribeNever, readOrigin, readNothing);
   const prompt = origin ? agentPrompt(origin) : null;
 
@@ -194,58 +126,28 @@ export function AgentPromptButton({ className }: { className?: string }) {
 
   return (
     <CopiedContext.Provider value={copied}>
-      <div
+      <Button
+        variant="ghost"
+        size="lg"
+        leadingIcon={CopyPromptIcon}
+        onClick={copy}
+        disabled={!prompt}
+        // The button is the pill: one step above the page, like the level
+        // cards, so it reads as a control in both themes. 44px tall, with a
+        // 15px label; the Button keeps its own paddings.
+        // On press the whole pill scales, border included, instead of the
+        // Button's fill layer alone — that would leave the border standing
+        // around a shrunken fill, reading as a second, inner border.
         className={cn(
-          // One step above the page, like the level cards, so the pill reads
-          // as a control in both themes.
-          "inline-flex h-11 w-fit items-center gap-0.5 rounded-full border border-border bg-surface-5 p-1",
+          "h-11 rounded-full border border-border bg-surface-5 text-[15px] text-foreground",
+          "transition-transform duration-80 active:scale-[0.98] [&>span[aria-hidden]]:group-active:scale-100",
           className
         )}
+        aria-live="polite"
       >
-        <Button
-          variant="ghost"
-          size="lg"
-          leadingIcon={CopyPromptIcon}
-          onClick={copy}
-          disabled={!prompt}
-          className="rounded-full text-foreground"
-          aria-live="polite"
-        >
-          Copy prompt
-          {copied && <span className="sr-only">Copied</span>}
-        </Button>
-        <span aria-hidden className="mx-1 h-5 w-px bg-border" />
-        {AGENTS.map(({ name, Mark, href, prefills, fallback }) => {
-          const url = prompt ? href(prompt) : undefined;
-          const external = url?.startsWith("http");
-          return (
-            <Button
-              key={name}
-              asChild
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={(event) => {
-                void copy();
-                if (url && fallback && !external) {
-                  event.preventDefault();
-                  openWithFallback(url, fallback);
-                }
-              }}
-            >
-              <a
-                href={url}
-                target={external ? "_blank" : undefined}
-                rel={external ? "noopener noreferrer" : undefined}
-                aria-label={prefills ? `Open in ${name}` : `Copy and open ${name}`}
-                title={prefills ? `Open in ${name}` : `Copy, then open a new ${name} thread`}
-              >
-                <Mark size={18} />
-              </a>
-            </Button>
-          );
-        })}
-      </div>
+        Copy prompt
+        {copied && <span className="sr-only">Copied</span>}
+      </Button>
     </CopiedContext.Provider>
   );
 }

@@ -5,4 +5,4 @@
 Agents on the page get tools on `document.modelContext` (WebMCP) as soon as it loads: read the card format, start a deck, add cards in batches, publish, import, generate, play, delete.
 
 - [Capabilities for agents](/agents.md): every tool, its inputs and outputs, the card format, the house style.
-- [Source](https://github.com/mickadesign/Learning): fork it to run your own.
+- [Source](https://github.com/mickadesign/humanmemory): fork it to run your own.

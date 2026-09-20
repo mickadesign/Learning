@@ -17,7 +17,6 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { TimerRing } from "@/components/quiz/timer-ring";
 import {
   cardPicture,
   type QuizLevel,
@@ -144,7 +143,7 @@ function DraggableThumbnail({
       drag
       dragMomentum={false}
       style={{ x, y }}
-      className="size-full touch-none cursor-grab active:cursor-grabbing"
+      className="size-full touch-none"
       onDragStart={() => {
         snapGeneration.current += 1;
         x.stop();
@@ -181,10 +180,8 @@ function DraggableThumbnail({
 /** Three illustrated cards that open one timed, score-free example. */
 export function LandingCardFan({
   levels,
-  timerSeconds,
 }: {
   levels: QuizLevel[];
-  timerSeconds: number;
 }) {
   const reduceMotion = useReducedMotion() ?? false;
   const cards = deckIllustratedCards(levels);
@@ -196,17 +193,15 @@ export function LandingCardFan({
   const titleId = useId();
   const descriptionId = useId();
   const [selected, setSelected] = useState<string | null>(null);
-  const [timedOut, setTimedOut] = useState(false);
   const previewOpen = activeIndex !== null;
 
   if (!cards.length) return null;
 
   const picture = activeQuestion ? cardPicture(activeQuestion) : undefined;
   const answer = activeQuestion ? correctAnswer(activeQuestion) : "";
-  const resolved = selected !== null || timedOut;
-  const feedback = timedOut
-    ? `Time’s up. ${answer} is correct.`
-    : selected === answer
+  const resolved = selected !== null;
+  const feedback =
+    selected === answer
       ? `Correct. ${activeQuestion?.fact ?? ""}`
       : selected
         ? `Not quite. ${answer} is correct.`
@@ -214,7 +209,6 @@ export function LandingCardFan({
 
   const openPreview = (index: number) => {
     setSelected(null);
-    setTimedOut(false);
     activeIndexRef.current = index;
     setActiveIndex(index);
   };
@@ -268,7 +262,7 @@ export function LandingCardFan({
                   onClick={() => openPreview(index)}
                   title={`Preview ${artwork}`}
                   layoutId={`landing-card-shell-${question.id}`}
-                  className="block size-full cursor-grab overflow-hidden rounded-lg bg-surface-5 shadow-[0_5px_10px_-5px_rgba(0,0,0,0.35)] active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--focus-ring,#6B97FF)]"
+                  className="block size-full cursor-pointer overflow-hidden rounded-lg bg-surface-5 shadow-[0_5px_10px_-5px_rgba(0,0,0,0.35)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--focus-ring,#6B97FF)]"
                   transition={
                     reduceMotion
                       ? REDUCED_MOTION_TRANSITION
@@ -359,7 +353,7 @@ export function LandingCardFan({
                           : CARD_MORPH_SPRING
                       }
                       className={cn(
-                        "pointer-events-auto max-h-[calc(100dvh-32px)] w-[min(440px,calc(100vw-32px))] overflow-x-hidden overflow-y-auto overscroll-contain rounded-[20px] border border-border text-foreground shadow-2xl",
+                        "pointer-events-auto max-h-[calc(100dvh-32px)] w-[min(440px,calc(100vw-32px))] overflow-x-hidden overflow-y-auto overscroll-contain rounded-[20px] text-foreground shadow-2xl",
                         surfaceClasses(4)
                       )}
                     >
@@ -370,7 +364,7 @@ export function LandingCardFan({
                             ? REDUCED_MOTION_TRANSITION
                             : CARD_MORPH_SPRING
                         }
-                        className="relative h-48 overflow-hidden border-b border-border bg-surface-5"
+                        className="relative h-48 overflow-hidden bg-surface-5"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -383,7 +377,7 @@ export function LandingCardFan({
                             variant="ghost"
                             size="icon-sm"
                             aria-label="Close"
-                            className="absolute right-3 top-3 rounded-full border border-white/35 bg-black/40 text-white shadow-sm backdrop-blur-md hover:text-white"
+                            className="absolute right-3 top-3 rounded-full bg-black/40 text-white shadow-sm backdrop-blur-md hover:text-white"
                           >
                             <CloseGlyph />
                           </Button>
@@ -408,25 +402,10 @@ export function LandingCardFan({
                           {activeQuestion.imageCredit?.title ?? "Artwork"} flashcard
                         </Dialog.Title>
                         <Dialog.Description id={descriptionId} className="sr-only">
-                          Answer before the timer runs out.
+                          Pick the answer.
                         </Dialog.Description>
 
-                        <div className="flex min-h-9 items-center justify-between gap-4">
-                          {activeQuestion.imageCredit ? (
-                            <p className="text-[12px] text-muted-foreground">
-                              {activeQuestion.imageCredit.title} · {activeQuestion.imageCredit.author}
-                            </p>
-                          ) : (
-                            <span />
-                          )}
-                          <TimerRing
-                            active={!resolved}
-                            seconds={timerSeconds}
-                            onTimeout={() => setTimedOut(true)}
-                          />
-                        </div>
-
-                        <p className="mt-3 font-heading text-[26px] leading-[1.1]">
+                        <p className="font-heading text-[26px] leading-[1.1]">
                           {previewPrompt(activeQuestion)}
                         </p>
 
