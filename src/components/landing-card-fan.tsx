@@ -22,7 +22,7 @@ import {
   type QuizLevel,
 } from "@/lib/deck";
 import {
-  deckIllustratedCards,
+  landingIllustratedCards,
   type IllustratedCard,
 } from "@/lib/deck-thumbnails";
 import { spring } from "@/lib/springs";
@@ -184,7 +184,7 @@ export function LandingCardFan({
   levels: QuizLevel[];
 }) {
   const reduceMotion = useReducedMotion() ?? false;
-  const cards = deckIllustratedCards(levels);
+  const cards = landingIllustratedCards(levels);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const activeQuestion = activeIndex === null ? undefined : cards[activeIndex];
   const options = activeQuestion ? previewOptions(activeQuestion) : [];

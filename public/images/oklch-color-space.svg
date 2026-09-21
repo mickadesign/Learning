@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title description">
+  <title id="title">OKLCH color space</title>
+  <desc id="description">A vivid spectrum of colors with even visual lightness arranged over a dark field.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a1020"/>
+      <stop offset="1" stop-color="#171021"/>
+    </linearGradient>
+    <linearGradient id="spectrum" x1="126" y1="0" x2="1074" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff5a9e"/>
+      <stop offset=".16" stop-color="#d76dff"/>
+      <stop offset=".32" stop-color="#7888ff"/>
+      <stop offset=".48" stop-color="#00aeea"/>
+      <stop offset=".64" stop-color="#00b996"/>
+      <stop offset=".8" stop-color="#a3b900"/>
+      <stop offset="1" stop-color="#f59135"/>
+    </linearGradient>
+    <filter id="spectrum-glow" x="-20%" y="-50%" width="140%" height="200%">
+      <feGaussianBlur stdDeviation="32" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="dots" width="42" height="42" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#fff" fill-opacity=".08"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="675" fill="url(#background)"/>
+  <rect width="1200" height="675" fill="url(#dots)"/>
+  <rect x="126" y="214" width="948" height="246" rx="123" fill="url(#spectrum)" opacity=".34" filter="url(#spectrum-glow)"/>
+  <rect x="126" y="214" width="948" height="246" rx="123" fill="url(#spectrum)"/>
+  <path d="M166 337H1034" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="3"/>
+  <g fill="#fff" stroke="#0b1020" stroke-width="8">
+    <circle cx="166" cy="337" r="17"/>
+    <circle cx="310" cy="337" r="17"/>
+    <circle cx="455" cy="337" r="17"/>
+    <circle cx="600" cy="337" r="17"/>
+    <circle cx="745" cy="337" r="17"/>
+    <circle cx="890" cy="337" r="17"/>
+    <circle cx="1034" cy="337" r="17"/>
+  </g>
+</svg>

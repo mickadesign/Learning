@@ -17,9 +17,8 @@ import { WanderingCursor } from "@/components/wandering-cursor";
 import { DeckList } from "@/components/deck-list";
 import { ShareLinkButton } from "@/components/share-link-button";
 import { AgentPromptButton } from "@/components/agent-prompt-button";
-import { FallingLinesBackdrop } from "@/components/falling-lines-backdrop";
 import { LandingCardFan } from "@/components/landing-card-fan";
-import { PrismBackdrop } from "@/components/prism-backdrop";
+import { PhyllotaxisBackdrop } from "@/components/phyllotaxis-backdrop";
 import { QuizModal } from "@/components/quiz/quiz-modal";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -248,8 +247,7 @@ export function HomeScreen({ shared }: HomeScreenProps = {}) {
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-surface-1 px-6">
-      <FallingLinesBackdrop />
-      <PrismBackdrop />
+      <PhyllotaxisBackdrop />
 
       <motion.main
         initial={{ opacity: 0, y: 12 }}
