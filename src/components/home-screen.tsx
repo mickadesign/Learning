@@ -21,6 +21,7 @@ import { LandingCardFan } from "@/components/landing-card-fan";
 import { PhyllotaxisBackdrop } from "@/components/phyllotaxis-backdrop";
 import { QuizModal } from "@/components/quiz/quiz-modal";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SoundToggle } from "@/components/sound-toggle";
 
 /** The Button's loading glyph, on its own, for the status line. */
 function Spinner() {
@@ -473,6 +474,12 @@ export function HomeScreen({ shared, agentExpected = false }: HomeScreenProps = 
 
       <div className="fixed bottom-6 right-6 z-20">
         <ThemeToggle />
+      </div>
+
+      {/* Above the quiz modal and its backdrop (z-50) and the fireworks
+          canvas (z-60, click-through), so sound can be muted mid-quiz. */}
+      <div className="fixed right-4 top-4 z-[70] sm:right-6 sm:top-6">
+        <SoundToggle />
       </div>
 
       <QuizModal

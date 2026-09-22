@@ -45,6 +45,15 @@ the result, and `share_flashcard_deck` gives agents the same link. Needs
 `BLOB_READ_WRITE_TOKEN` (a linked Blob store); without it sharing is
 quietly unavailable.
 
+## Sounds
+
+`src/lib/sounds.ts` synthesizes the answer sounds with Web Audio (no audio
+files) from one settings object, `DEFAULT_SOUNDS`: "Level up" (a quick
+rising C, E, G) for a right answer, "Triple tap" (three soft taps timed to
+the row's shake) for a wrong one. They play from `resolve` in the quiz and
+from the landing's miniature cards. The speaker button at the page's top
+right (`sound-toggle.tsx`) mutes them, remembered in local storage.
+
 ## The engine
 
 - `src/components/quiz/quiz-modal.tsx` — the whole quiz: the "deck

@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Confetti } from "@/components/quiz/confetti";
 import { getShareLink } from "@/lib/deck-store";
 import { shareDeck } from "@/lib/share";
+import { playAnswerSound } from "@/lib/sounds";
 import {
   TIMER_RING_CIRCUMFERENCE,
   TIMER_RING_RADIUS,
@@ -903,6 +904,7 @@ export function QuizModal({
     setScore(0);
     setResults([]);
     revealedRef.current = false;
+    setHeldHeight(null);
     setRevealed(false);
     setTimedOut(false);
     setOrderReady(false);
@@ -912,10 +914,22 @@ export function QuizModal({
     requestShareLink();
   };
 
+  // The card's height the moment it is answered. Untouched wrong options
+  // collapse on the reveal, and a vertically centered card would re-center
+  // as it shrank; holding the height keeps the prompt and the chosen answer
+  // exactly where they were. Released on the next card.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [heldHeight, setHeldHeight] = useState<number | null>(null);
+  const holdCardHeight = () => setHeldHeight(cardRef.current?.offsetHeight ?? null);
+
   const resolve = useCallback(
     (correct: boolean) => {
       if (revealedRef.current) return;
       revealedRef.current = true;
+      holdCardHeight();
+      // Every card kind reports its answer here, so this is the one place
+      // the answer sound plays. A timeout isn't a choice and stays silent.
+      playAnswerSound(correct);
       setRevealed(true);
       if (correct) setScore((s) => s + 1);
       setResults((prev) => {
@@ -930,6 +944,7 @@ export function QuizModal({
   const timeout = useCallback(() => {
     if (revealedRef.current) return;
     revealedRef.current = true;
+    holdCardHeight();
     setTimedOut(true);
     setRevealed(true);
     setResults((prev) => {
@@ -944,6 +959,7 @@ export function QuizModal({
     if (qIndex + 1 < run.length) {
       setQIndex((i) => i + 1);
       revealedRef.current = false;
+      setHeldHeight(null);
       setRevealed(false);
       setTimedOut(false);
       setOrderReady(false);
@@ -1177,10 +1193,12 @@ export function QuizModal({
                 <div>
                     <motion.div
                       key={current.q.id}
+                      ref={cardRef}
                       initial={reduceMotion ? { opacity: 0 } : cardEnter}
                       animate={reduceMotion ? { opacity: 1 } : cardCenter}
                       transition={cardSpring}
                       className="min-h-[220px]"
+                      style={{ minHeight: heldHeight ?? undefined }}
                     >
                       {current.q.kind === "choice" && (
                         <ChoiceCard
@@ -1217,10 +1235,10 @@ export function QuizModal({
 
                       {/* Reveal: the one-line fact behind the answer. The
                           advance CTA lives in the bottom bar with the dots.
-                          Order cards render it invisibly up front — nothing
-                          collapses there, so reserving the space keeps the
-                          centered card from shifting on reveal. */}
-                      {(revealed || current.q.kind === "order") && (
+                          Rendered invisibly up front for every card kind, so
+                          the space is reserved and the vertically centered
+                          card doesn't jump when the fact fades in. */}
+                      {(
                         <motion.div
                           initial={false}
                           animate={{

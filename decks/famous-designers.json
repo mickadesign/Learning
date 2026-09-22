@@ -1,0 +1,390 @@
+{
+  "slug": "famous-designers",
+  "title": "Famous Designers",
+  "headline": "Do you know who designed that?",
+  "tagline": "Chairs, logos, typefaces, and the people behind them.",
+  "intro": [
+    "The things around you were all decided by someone: the chair, the letters on the sign, the shape of the bottle.",
+    "Forty cards on the designers whose decisions stuck, from the Bauhaus to the iPod."
+  ],
+  "cta": "Test knowledge",
+  "author": { "name": "@micka_design", "url": "https://x.com/micka_design" },
+  "passScore": 7,
+  "timerSeconds": 20,
+  "verdicts": {
+    "low": "A moodboard, not yet a portfolio. Keep collecting.",
+    "mid": "A solid first draft. The kerning needs work.",
+    "high": "Portfolio-ready. Rams would give a small nod.",
+    "perfect": "Compasso d'Oro material."
+  },
+  "levels": [
+    {
+      "id": "sketchbook",
+      "name": "Sketchbook",
+      "tagline": "Famous names and the objects everyone knows.",
+      "timed": false,
+      "hidden": false,
+      "questions": [
+        {
+          "kind": "choice",
+          "id": "sk1",
+          "prompt": "Who designed this lounge chair?",
+          "revealImage": "https://upload.wikimedia.org/wikipedia/commons/e/e3/Eameslounch.jpg",
+          "imageAlt": "A low leather lounge chair with a matching ottoman, its shell in curved dark plywood.",
+          "imageCredit": { "title": "Eames Lounge Chair", "license": "Public domain", "source": "https://en.wikipedia.org/wiki/Eames_Lounge_Chair" },
+          "options": ["Charles and Ray Eames", "Eero Saarinen", "George Nelson", "Arne Jacobsen"],
+          "fact": "Herman Miller has made the Eames Lounge Chair since 1956; its shell is molded plywood veneered in rosewood."
+        },
+        {
+          "kind": "choice",
+          "id": "sk2",
+          "prompt": "Who led Apple's design team through the iMac, iPod and iPhone years?",
+          "options": ["Jony Ive", "Dieter Rams", "Marc Newson", "Hartmut Esslinger"],
+          "fact": "Ive joined Apple in 1992 and ran its design studio from 1996 until he left in 2019."
+        },
+        {
+          "kind": "truefalse",
+          "id": "sk3",
+          "statement": "Coco Chanel is credited with popularising the little black dress.",
+          "answer": true,
+          "fact": "Vogue printed her plain black dress in 1926 and called it Chanel's Ford, a uniform for every woman."
+        },
+        {
+          "kind": "choice",
+          "id": "sk4",
+          "prompt": "Dieter Rams spent most of his career designing for which company?",
+          "options": ["Braun", "Bang & Olufsen", "Sony", "Olivetti"],
+          "fact": "Rams led Braun's design department from 1961 to 1995 and wrote the ten principles of good design."
+        },
+        {
+          "kind": "order",
+          "id": "sk5",
+          "prompt": "Tap these chairs by the year they first went into production, earliest first.",
+          "items": [
+            { "label": "Wassily Chair", "value": 1925 },
+            { "label": "Barcelona Chair", "value": 1929 },
+            { "label": "Eames Lounge Chair", "value": 1956 },
+            { "label": "Panton Chair", "value": 1967 }
+          ],
+          "fact": "Breuer's tubular steel came first; Panton's single piece of plastic took until 1967 to manufacture."
+        },
+        {
+          "kind": "choice",
+          "id": "sk6",
+          "prompt": "Who drew this typeface?",
+          "revealImage": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/HelveticaSpecimenCH.svg/960px-HelveticaSpecimenCH.svg.png",
+          "imageAlt": "A type specimen: rows of clean sans-serif letters in black on white.",
+          "imageCredit": { "title": "Helvetica specimen", "license": "Public domain", "source": "https://en.wikipedia.org/wiki/Helvetica" },
+          "options": ["Max Miedinger", "Adrian Frutiger", "Paul Renner", "Eric Gill"],
+          "fact": "Miedinger drew Helvetica in 1957 with Eduard Hoffmann; it launched as Neue Haas Grotesk."
+        },
+        {
+          "kind": "truefalse",
+          "id": "sk7",
+          "statement": "Philippe Starck designed the Juicy Salif lemon squeezer for IKEA.",
+          "answer": false,
+          "fact": "The three-legged squeezer was made by Alessi in 1990; Starck sketched it on a pizzeria placemat."
+        },
+        {
+          "kind": "choice",
+          "id": "sk8",
+          "prompt": "Who founded the school that built this in 1925?",
+          "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Dessau_Bauhaus-Geb%C3%A4ude_asv2024-06_img1.jpg/960px-Dessau_Bauhaus-Geb%C3%A4ude_asv2024-06_img1.jpg",
+          "imageAlt": "A white modernist building with a glass curtain wall and large lettering down its side.",
+          "imageCredit": { "title": "Bauhaus Dessau", "author": "A.Savin", "license": "FAL", "source": "https://en.wikipedia.org/wiki/Bauhaus_Dessau" },
+          "options": ["Walter Gropius", "Ludwig Mies van der Rohe", "Le Corbusier", "Marcel Breuer"],
+          "fact": "Gropius founded the Bauhaus in Weimar in 1919 and designed its Dessau building himself."
+        },
+        {
+          "kind": "choice",
+          "id": "sk9",
+          "prompt": "Who designed the London Underground map as a diagram rather than a geographic map?",
+          "options": ["Harry Beck", "Edward Johnston", "Frank Pick", "Abram Games"],
+          "fact": "Beck's 1933 diagram treated the network like an electrical circuit, with only horizontals, verticals and diagonals."
+        },
+        {
+          "kind": "choice",
+          "id": "sk10",
+          "prompt": "Which fashion designer launched the New Look in 1947?",
+          "options": ["Christian Dior", "Cristóbal Balenciaga", "Yves Saint Laurent", "Hubert de Givenchy"],
+          "fact": "The nipped waist and full skirt used yards of fabric just as wartime rationing was ending."
+        }
+      ]
+    },
+    {
+      "id": "studio",
+      "name": "Studio",
+      "tagline": "Attributions, influences, and why things look the way they do.",
+      "timed": false,
+      "hidden": false,
+      "questions": [
+        {
+          "kind": "choice",
+          "id": "st1",
+          "prompt": "Which Apple product is often compared to Braun's 1958 T3 pocket radio?",
+          "options": ["The first iPod", "The Newton", "The Macintosh 128K", "The Apple II"],
+          "fact": "The T3 was Dieter Rams' work; the iPod's white face and round wheel echo it almost line for line."
+        },
+        {
+          "kind": "truefalse",
+          "id": "st2",
+          "statement": "Ray Eames was Charles Eames' sister.",
+          "answer": false,
+          "fact": "Ray Kaiser married Charles in 1941; their office credited every design to both of them."
+        },
+        {
+          "kind": "order",
+          "id": "st3",
+          "prompt": "Tap these typefaces by release year, earliest first.",
+          "items": [
+            { "label": "Futura", "value": 1927 },
+            { "label": "Helvetica", "value": 1957 },
+            { "label": "Frutiger", "value": 1976 },
+            { "label": "Gotham", "value": 2000 }
+          ],
+          "fact": "Renner's Futura, Miedinger's Helvetica, Frutiger's airport face, then Hoefler and Frere-Jones's Gotham."
+        },
+        {
+          "kind": "choice",
+          "id": "st4",
+          "prompt": "Marcel Breuer said the frame of this chair was inspired by what?",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/1/19/Bauhaus_Chair_Breuer.png",
+          "imageAlt": "A chair made of bent tubular steel with leather straps for the seat, back and arms.",
+          "imageCredit": { "title": "Wassily Chair", "license": "Public domain", "source": "https://en.wikipedia.org/wiki/Wassily_Chair" },
+          "options": ["Bicycle handlebars", "Ship rigging", "Aircraft struts", "Cast-iron railings"],
+          "fact": "Breuer's own Adler bicycle showed him in 1925 that bent steel tube could be light, strong and mass-produced."
+        },
+        {
+          "kind": "choice",
+          "id": "st5",
+          "prompt": "Who designed this chair, with Lilly Reich, for the 1929 German Pavilion in Barcelona?",
+          "revealImage": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/Ngv_design%2C_ludwig_mies_van_der_rohe_%26_co%2C_barcelona_chair.JPG/960px-Ngv_design%2C_ludwig_mies_van_der_rohe_%26_co%2C_barcelona_chair.JPG",
+          "imageAlt": "A low leather chair on two crossed, curved steel bars, with tufted cushions.",
+          "imageCredit": { "title": "Barcelona chair", "author": "sailko", "license": "CC BY 2.5", "source": "https://en.wikipedia.org/wiki/Barcelona_chair" },
+          "options": ["Ludwig Mies van der Rohe", "Marcel Breuer", "Alvar Aalto", "Eileen Gray"],
+          "fact": "The chair was made for the Spanish king and queen to sit on at the pavilion's opening."
+        },
+        {
+          "kind": "truefalse",
+          "id": "st6",
+          "statement": "Massimo Vignelli designed the 1972 New York City subway map.",
+          "answer": true,
+          "fact": "His diagram was replaced by a more geographic map in 1979, then revived online as the Weekender in 2011."
+        },
+        {
+          "kind": "choice",
+          "id": "st7",
+          "prompt": "Whose ten principles end with good design is as little design as possible?",
+          "options": ["Dieter Rams", "Massimo Vignelli", "Paul Rand", "Saul Bass"],
+          "fact": "Rams wrote the principles in the 1970s; the first is that good design is innovative."
+        },
+        {
+          "kind": "choice",
+          "id": "st8",
+          "prompt": "Saul Bass is best known for designing what?",
+          "options": ["Film title sequences", "Airport signage", "Kitchen appliances", "Sports cars"],
+          "fact": "Bass opened Vertigo and Anatomy of a Murder, and drew the logos of AT&T, United Airlines and Kleenex."
+        },
+        {
+          "kind": "choice",
+          "id": "st9",
+          "prompt": "Zaha Hadid was the first woman to win which prize, in 2004?",
+          "options": ["The Pritzker Architecture Prize", "The Turner Prize", "The Compasso d'Oro", "The Praemium Imperiale"],
+          "fact": "Her first built work was the Vitra Fire Station in Weil am Rhein, finished in 1993."
+        },
+        {
+          "kind": "choice",
+          "id": "st10",
+          "prompt": "Which car did Giorgetto Giugiaro design?",
+          "options": ["Volkswagen Golf Mk1", "Citroën DS", "Porsche 911", "Mini"],
+          "fact": "The 1974 Golf was Giugiaro's; the DS was Flaminio Bertoni's, the 911 Butzi Porsche's, the Mini Alec Issigonis's."
+        }
+      ]
+    },
+    {
+      "id": "atelier",
+      "name": "Atelier",
+      "tagline": "Exact years and deep cuts, against the clock.",
+      "timed": true,
+      "hidden": false,
+      "questions": [
+        {
+          "kind": "choice",
+          "id": "at1",
+          "prompt": "In which year did Dieter Rams and Hans Gugelot design this radiogram, nicknamed Snow White's Coffin?",
+          "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Braun_SK_4.png/960px-Braun_SK_4.png",
+          "imageAlt": "A white and pale wood radio and record player with a clear acrylic lid.",
+          "imageCredit": { "title": "Braun SK 4", "author": "Konrad Conrad", "license": "CC BY-SA 3.0", "source": "https://commons.wikimedia.org/wiki/File:Braun_SK_4.png" },
+          "options": ["1956", "1949", "1962", "1971"],
+          "fact": "The transparent lid was a first for hi-fi, and it gave the SK 4 its nickname."
+        },
+        {
+          "kind": "choice",
+          "id": "at2",
+          "prompt": "How many stripes does Paul Rand's 1972 IBM logo have?",
+          "options": ["8", "6", "10", "13"],
+          "fact": "The stripes suggest speed and unify the three letters' widths; Rand had drawn a solid version in 1956."
+        },
+        {
+          "kind": "truefalse",
+          "id": "at3",
+          "statement": "Helvetica was released in 1957 under the name Neue Haas Grotesk.",
+          "answer": true,
+          "fact": "It became Helvetica in 1960, from Helvetia, the Latin name for Switzerland, to sell abroad."
+        },
+        {
+          "kind": "order",
+          "id": "at4",
+          "prompt": "Tap these designers by year of birth, earliest first.",
+          "items": [
+            { "label": "Coco Chanel", "value": 1883 },
+            { "label": "Charles Eames", "value": 1907 },
+            { "label": "Dieter Rams", "value": 1932 },
+            { "label": "Jony Ive", "value": 1967 }
+          ],
+          "fact": "Chanel 1883, Eames 1907, Rams 1932, Ive 1967: four generations of what a good object looks like."
+        },
+        {
+          "kind": "choice",
+          "id": "at5",
+          "prompt": "In which year did Yves Saint Laurent show Le Smoking, the tuxedo for women?",
+          "options": ["1966", "1958", "1971", "1985"],
+          "fact": "Helmut Newton's 1975 photograph for Vogue, in a Paris alley at night, made it an icon."
+        },
+        {
+          "kind": "choice",
+          "id": "at6",
+          "prompt": "Alvar Aalto designed this vase for which 1937 event?",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/3/32/Aalto-maljakko%2C_Iittala._Alvar_Aalto._1956_-_n.1970-luku.jpg",
+          "imageAlt": "A clear glass vase with a wavy, free-form outline.",
+          "imageCredit": { "title": "Aalto vase, Iittala", "license": "CC BY 4.0", "source": "https://commons.wikimedia.org/wiki/File:Aalto-maljakko,_Iittala._Alvar_Aalto._1956_-_n.1970-luku.jpg" },
+          "options": ["The Paris World Exposition", "The Milan Triennale", "The Stockholm Exhibition", "The New York World's Fair"],
+          "fact": "Iittala still blows the vase; its name, Savoy, comes from the Helsinki restaurant Aalto furnished."
+        },
+        {
+          "kind": "truefalse",
+          "id": "at7",
+          "statement": "Raymond Loewy designed the Volkswagen Beetle.",
+          "answer": false,
+          "fact": "The Beetle was Ferdinand Porsche's; Loewy's cars were Studebakers, the 1953 Starliner and the 1963 Avanti."
+        },
+        {
+          "kind": "choice",
+          "id": "at8",
+          "prompt": "Who designed this, the first single-piece plastic chair?",
+          "revealImage": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/48/Esemplare_in_fibra_di_vetro_anni_60%27.png/960px-Esemplare_in_fibra_di_vetro_anni_60%27.png",
+          "imageAlt": "A glossy S-shaped chair moulded from one continuous piece, with no legs.",
+          "imageCredit": { "title": "Panton Chair", "author": "Robogate", "license": "CC BY-SA 4.0", "source": "https://en.wikipedia.org/wiki/Panton_Chair" },
+          "options": ["Verner Panton", "Eero Saarinen", "Charles Eames", "Arne Jacobsen"],
+          "fact": "Vitra put the chair into production in 1967, after years of prototypes in fibreglass and foam."
+        },
+        {
+          "kind": "choice",
+          "id": "at9",
+          "prompt": "In which city did the Bauhaus close for good in 1933?",
+          "options": ["Berlin", "Weimar", "Dessau", "Munich"],
+          "fact": "Weimar in 1919, Dessau from 1925, Berlin from 1932; the Nazis forced it shut the next year."
+        },
+        {
+          "kind": "choice",
+          "id": "at10",
+          "prompt": "Milton Glaser's I Love New York logo dates from which year?",
+          "options": ["1977", "1969", "1984", "1991"],
+          "fact": "Glaser sketched it in the back of a taxi with a red crayon, and did the job for free."
+        }
+      ]
+    },
+    {
+      "id": "legend",
+      "name": "Legend",
+      "tagline": "Every trick in the studio, on a ten-second clock.",
+      "timed": true,
+      "timerSeconds": 10,
+      "hidden": true,
+      "questions": [
+        {
+          "kind": "choice",
+          "id": "lg1",
+          "prompt": "Who redesigned the Lucky Strike pack in 1940?",
+          "options": ["Raymond Loewy", "Paul Rand", "Lester Beall", "Saul Bass"],
+          "fact": "Loewy printed the target on both sides, so the logo showed whichever way the pack landed."
+        },
+        {
+          "kind": "truefalse",
+          "id": "lg2",
+          "statement": "Eileen Gray's house E-1027 stands on the coast of Ireland.",
+          "answer": false,
+          "fact": "It is at Roquebrune-Cap-Martin on the French Riviera; Le Corbusier later painted murals on its walls uninvited."
+        },
+        {
+          "kind": "choice",
+          "id": "lg3",
+          "prompt": "Ettore Sottsass designed this portable typewriter for Olivetti in 1969. What is it called?",
+          "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Olivetti-Valentine.jpg/960px-Olivetti-Valentine.jpg",
+          "imageAlt": "A bright red portable typewriter in a matching red bucket case.",
+          "imageCredit": { "title": "Olivetti Valentine", "author": "Folletto", "license": "CC BY-SA 3.0", "source": "https://en.wikipedia.org/wiki/Olivetti_Valentine" },
+          "options": ["Valentine", "Lettera 22", "Studio 45", "Divisumma"],
+          "fact": "The Lettera 22 was Marcello Nizzoli's; Sottsass went on to found the Memphis Group in 1981."
+        },
+        {
+          "kind": "order",
+          "id": "lg4",
+          "prompt": "Tap these moments in order, earliest first.",
+          "items": [
+            { "label": "Bauhaus founded", "value": 1919 },
+            { "label": "Wassily Chair", "value": 1925 },
+            { "label": "IBM striped logo", "value": 1972 },
+            { "label": "Memphis Group founded", "value": 1981 },
+            { "label": "First iPod", "value": 2001 }
+          ],
+          "fact": "1919, 1925, 1972, 1981, 2001: from a school in Weimar to a thousand songs in your pocket."
+        },
+        {
+          "kind": "choice",
+          "id": "lg5",
+          "prompt": "Adrian Frutiger designed the signage typeface for which airport?",
+          "options": ["Charles de Gaulle", "Heathrow", "Schiphol", "JFK"],
+          "fact": "Drawn for Roissy in 1975, the face was released to everyone as Frutiger in 1976."
+        },
+        {
+          "kind": "choice",
+          "id": "lg6",
+          "prompt": "Who designed this chair for the SAS Royal Hotel in Copenhagen in 1958?",
+          "revealImage": "https://upload.wikimedia.org/wikipedia/commons/e/e6/The_Egg_Chair.jpg",
+          "imageAlt": "A high-backed armchair whose shell curves around the sitter like a shell.",
+          "imageCredit": { "title": "Egg chair", "author": "Scott Anderson", "license": "CC BY-SA 2.0", "source": "https://en.wikipedia.org/wiki/Egg_(chair)" },
+          "options": ["Arne Jacobsen", "Hans Wegner", "Finn Juhl", "Poul Kjærholm"],
+          "fact": "Jacobsen designed the whole hotel, down to the cutlery; the Egg and the Swan were made for its lobby."
+        },
+        {
+          "kind": "truefalse",
+          "id": "lg7",
+          "statement": "Charlotte Perriand worked with Le Corbusier on the LC4 chaise longue.",
+          "answer": true,
+          "fact": "Perriand joined his studio in 1927; the LC furniture is credited to Le Corbusier, Pierre Jeanneret and Perriand."
+        },
+        {
+          "kind": "choice",
+          "id": "lg8",
+          "prompt": "Who wrote the phrase form follows function?",
+          "options": ["Louis Sullivan", "Frank Lloyd Wright", "Adolf Loos", "Walter Gropius"],
+          "fact": "Sullivan wrote it in an 1896 essay on tall buildings; Wright had been his draftsman."
+        },
+        {
+          "kind": "choice",
+          "id": "lg9",
+          "prompt": "Kenji Ekuan designed which tabletop object for Kikkoman in 1961?",
+          "options": ["The soy sauce dispenser", "The rice cooker", "The chopstick rest", "The teapot"],
+          "fact": "The red-capped bottle has stayed in production, unchanged, for more than sixty years."
+        },
+        {
+          "kind": "choice",
+          "id": "lg10",
+          "prompt": "Who drew the Nike swoosh in 1971?",
+          "options": ["Carolyn Davidson", "Paul Rand", "Milton Glaser", "Saul Bass"],
+          "fact": "Davidson, then a design student, was paid 35 dollars; Nike later gave her shares in the company."
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,8 @@ import type { ComponentType } from "react";
 
 // ── Lucide ──────────────────────────────────────────────────
 import {
+  Volume2,
+  VolumeX,
   ChevronRight,
   ChevronDown,
   X,
@@ -55,6 +57,8 @@ import {
 
 // ── Tabler ──────────────────────────────────────────────────
 import {
+  IconVolume,
+  IconVolumeOff,
   IconChevronRight,
   IconChevronDown,
   IconColorPicker,
@@ -106,6 +110,8 @@ import {
 
 // ── Phosphor ────────────────────────────────────────────────
 import {
+  SpeakerHigh as PhSpeakerHigh,
+  SpeakerSlash as PhSpeakerSlash,
   CaretRight as PhCaretRight,
   CaretDown as PhCaretDown,
   Eyedropper as PhEyedropper,
@@ -158,6 +164,8 @@ import {
 // ── HugeIcons ───────────────────────────────────────────────
 import { HugeiconsIcon } from "@hugeicons/react";
 import HiChevronRight from "@hugeicons/core-free-icons/ArrowRight01Icon";
+import HiVolume from "@hugeicons/core-free-icons/VolumeHighIcon";
+import HiVolumeOff from "@hugeicons/core-free-icons/VolumeMute02Icon";
 import HiChevronDown from "@hugeicons/core-free-icons/ArrowDown01Icon";
 import HiDropper from "@hugeicons/core-free-icons/DropperIcon";
 import HiX from "@hugeicons/core-free-icons/Cancel01Icon";
@@ -249,6 +257,8 @@ import {
   Pencil01 as UuiPencil,
   SkipForward as UuiSkipForward,
   CornerDownRight as UuiCornerDownRight,
+  VolumeMax as UuiVolume,
+  VolumeX as UuiVolumeOff,
 } from "@untitledui/icons";
 
 // ── Types ───────────────────────────────────────────────────
@@ -274,7 +284,8 @@ export type IconName =
   | "image" | "link" | "check" | "rotate-ccw"
   | "play" | "pause" | "pipette"
   | "home" | "message-circle" | "inbox"
-  | "pencil" | "skip-forward" | "corner-down-right";
+  | "pencil" | "skip-forward" | "corner-down-right"
+  | "volume" | "volume-off";
 
 export const iconLibraryOrder: IconLibrary[] = ["lucide", "tabler", "phosphor", "hugeicons", "untitledui"];
 
@@ -378,6 +389,8 @@ const lucideMap: Record<IconName, IconComponent> = {
   "pencil": Pencil,
   "skip-forward": SkipForward,
   "corner-down-right": CornerDownRight,
+  "volume": Volume2,
+  "volume-off": VolumeX,
 };
 
 const tablerMap: Record<IconName, IconComponent> = {
@@ -428,6 +441,8 @@ const tablerMap: Record<IconName, IconComponent> = {
   "pencil": tabler(IconPencil),
   "skip-forward": tabler(IconPlayerSkipForward),
   "corner-down-right": tabler(IconCornerDownRight),
+  "volume": tabler(IconVolume),
+  "volume-off": tabler(IconVolumeOff),
 };
 
 const phosphorMap: Record<IconName, IconComponent> = {
@@ -478,6 +493,8 @@ const phosphorMap: Record<IconName, IconComponent> = {
   "pencil": phosphor(PhPencil),
   "skip-forward": phosphor(PhSkipForward),
   "corner-down-right": phosphor(PhArrowElbowDownRight),
+  "volume": phosphor(PhSpeakerHigh),
+  "volume-off": phosphor(PhSpeakerSlash),
 };
 
 const hugeiconsMap: Record<IconName, IconComponent> = {
@@ -528,6 +545,8 @@ const hugeiconsMap: Record<IconName, IconComponent> = {
   "pencil": hugeicons(HiPencil),
   "skip-forward": hugeicons(HiSkipForward),
   "corner-down-right": hugeicons(HiCornerDownRight),
+  "volume": hugeicons(HiVolume),
+  "volume-off": hugeicons(HiVolumeOff),
 };
 
 const untitleduiMap: Record<IconName, IconComponent> = {
@@ -582,6 +601,8 @@ const untitleduiMap: Record<IconName, IconComponent> = {
   "pencil": untitledui(UuiPencil),
   "skip-forward": untitledui(UuiSkipForward),
   "corner-down-right": untitledui(UuiCornerDownRight),
+  "volume": untitledui(UuiVolume),
+  "volume-off": untitledui(UuiVolumeOff),
 };
 
 // ── Unified Map ─────────────────────────────────────────────

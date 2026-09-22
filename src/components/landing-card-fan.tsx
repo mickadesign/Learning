@@ -28,6 +28,7 @@ import {
 import { spring } from "@/lib/springs";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { cn } from "@/lib/utils";
+import { playAnswerSound } from "@/lib/sounds";
 import { useIcon } from "@/lib/icon-context";
 
 /* ─────────────────────────────────────────────────────────
@@ -418,7 +419,10 @@ export function LandingCardFan({
                                 key={option}
                                 type="button"
                                 disabled={resolved}
-                                onClick={() => setSelected(option)}
+                                onClick={() => {
+                                  playAnswerSound(option === answer);
+                                  setSelected(option);
+                                }}
                                 className={cn(
                                   "flex min-h-11 w-full items-center rounded-full border px-4 py-2.5 text-left text-[14px] transition-colors duration-80",
                                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring,#6B97FF)]",
