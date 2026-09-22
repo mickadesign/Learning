@@ -69,7 +69,7 @@ same reason — script tools cap and screen large page-derived text.
   (`useAgentActivity`), and publish/import mark the deck done. The home
   screen's status line follows it ("Your agent is writing cards…"), falls
   back after 90 s of silence, and shows "Waiting for its first move" when
-  the page was opened at `/?agent`, which is where the copied agent prompt
+  the page was opened at `/agent`, which is where the copied agent prompt
   sends the agent.
 - `@mcp-b/global` is imported lazily in the browser. It wraps the native API
   when present and installs a polyfill otherwise.

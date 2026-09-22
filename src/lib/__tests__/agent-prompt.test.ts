@@ -5,7 +5,7 @@ describe("agentPrompt", () => {
   const prompt = agentPrompt("https://flashcards.example");
 
   it("sends the agent to the page with the presence flag and the reference", () => {
-    expect(prompt).toContain("https://flashcards.example/?agent");
+    expect(prompt).toContain("https://flashcards.example/agent");
     expect(prompt).toContain("https://flashcards.example/agents.md");
     expect(prompt).toContain("window.flashcards.call");
   });

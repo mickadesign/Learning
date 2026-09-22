@@ -15,7 +15,7 @@ Built with **Next.js 16 (App Router)**, **Tailwind CSS 4**, and
   Paste the prompt into whichever agent you use (Claude, Codex, Cursor, or
   anything that can open a page and call its tools). The agent opens the
   site, suggests topics or asks for one, and writes ten cards.
-- **The page follows the agent.** Opened from the prompt (`/?agent`), it
+- **The page follows the agent.** Opened from the prompt (`/agent`), it
   says it is waiting for the agent's first move; while the agent writes, the
   headline becomes *Creating flashcards for …* with fireworks and a big
   cursor drifting over the page; when the deck is published, it opens on its

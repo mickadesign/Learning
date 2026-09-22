@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { DECK } from "@/data";
 import type { Deck } from "@/lib/deck";
@@ -64,9 +64,12 @@ interface HomeScreenProps {
   /** A deck opened from its share link (/d/<id>): saved into this browser
    *  next to the visitor's own decks, then opened. */
   shared?: { deck: Deck; id: string };
+  /** Rendered at /agent, where the copied agent prompt sends the agent: the
+   *  page greets it before its first tool call. */
+  agentExpected?: boolean;
 }
 
-export function HomeScreen({ shared }: HomeScreenProps = {}) {
+export function HomeScreen({ shared, agentExpected = false }: HomeScreenProps = {}) {
   const saved = useSavedDecks();
   // Newest first, so a deck just written sits at the top of the list.
   const decks = useMemo(() => [DECK, ...[...saved].reverse()], [saved]);
@@ -195,14 +198,9 @@ export function HomeScreen({ shared }: HomeScreenProps = {}) {
 
   useWebMcpTools({ generateDeck, openDeck, playDeck, listDecks, findDeck, deleteDeck });
 
-  // The agent prompt sends its agent to /?agent, so the page can acknowledge
+  // The agent prompt sends its agent to /agent, so the page can acknowledge
   // the agent as soon as it lands — before its first tool call — and then
   // follow along call by call until the deck is published.
-  const agentExpected = useSyncExternalStore(
-    () => () => {},
-    () => new URLSearchParams(window.location.search).has("agent"),
-    () => false
-  );
   const activity = useAgentActivity();
   // Quiet detection without resetting state: the timer records which call
   // it timed out on, and a new call (a new `at`) is never equal to it.
@@ -213,7 +211,7 @@ export function HomeScreen({ shared }: HomeScreenProps = {}) {
     return () => clearTimeout(id);
   }, [activity]);
   const agentQuiet = activity.phase === "working" && quietAt === activity.at;
-  // The same patience for an agent that never shows up: a stale /?agent
+  // The same patience for an agent that never shows up: a stale /agent
   // link (a refresh after the session, a link the agent echoed back) falls
   // back to the prompt instead of waiting forever.
   const [expectedGaveUp, setExpectedGaveUp] = useState(false);
@@ -242,7 +240,11 @@ export function HomeScreen({ shared }: HomeScreenProps = {}) {
         ? `Creating flashcards for ${activity.title}…`
         : "Creating your flashcards…"
       : agentState === "done" && activity.phase === "done"
-        ? `Flashcards for ${activity.deck.title} are ready.`
+        ? // With other decks listed, the new one is the last row and names
+          // itself; the headline speaks for the shelf instead.
+          decks.length > 1
+          ? "One more deck on the shelf."
+          : `Flashcards for ${activity.deck.title} are ready.`
         : "Hey agent, make your human smarter.";
 
   return (
