@@ -23,14 +23,14 @@ export function DeckList({ decks, builtInSlug, onPlay }: DeckListProps) {
       {decks.map((deck) => (
         <li
           key={deck.slug}
-          className="flex min-h-[28px] items-center gap-3 text-[14px] leading-snug text-foreground"
+          className="flex min-h-9 items-center gap-3 text-[14px] leading-snug text-foreground"
         >
-          <span className="truncate">{deck.title}</span>
+          <span className="truncate text-[16px]">{deck.title}</span>
           <span className="ml-auto flex shrink-0 items-center gap-1">
             <ShareLinkButton deck={deck} builtIn={deck.slug === builtInSlug} />
             <Button
               variant="primary"
-              size="sm"
+              size="lg"
               className="rounded-full"
               onClick={() => onPlay(deck.slug)}
             >

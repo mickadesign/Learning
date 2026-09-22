@@ -273,6 +273,14 @@
   html {
     @apply font-sans;
   }
+  /* The highlight from micka.design: a soft blue, the text keeping its own
+     color; fainter on the dark theme. */
+  ::selection {
+    background: rgba(121, 161, 255, 0.6);
+  }
+  .dark ::selection {
+    background: rgba(121, 161, 255, 0.2);
+  }
   :focus-visible {
     outline: 1px solid var(--focus-ring, #6B97FF);
     outline-offset: 2px;

@@ -50,7 +50,7 @@ export function ShareLinkButton({ deck, builtIn = false }: ShareLinkButtonProps)
   return (
     <Button
       variant="ghost"
-      size="icon-sm"
+      size="icon"
       className="shrink-0 rounded-full"
       onClick={copy}
       aria-label={label}
@@ -61,7 +61,7 @@ export function ShareLinkButton({ deck, builtIn = false }: ShareLinkButtonProps)
           rather than JSX: the icon components come from a hook, which the
           "no components created during render" lint mistakes for a new
           component each render. */}
-      {createElement(state === "copied" ? CheckIcon : state === "failed" ? XIcon : LinkIcon, { size: 14 })}
+      {createElement(state === "copied" ? CheckIcon : state === "failed" ? XIcon : LinkIcon, { size: 16 })}
     </Button>
   );
 }

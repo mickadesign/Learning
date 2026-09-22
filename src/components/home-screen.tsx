@@ -7,7 +7,7 @@ import type { Deck } from "@/lib/deck";
 import { buildDeck, GenerationUnavailable, type DeckBuild } from "@/lib/create-deck";
 import { bestScoresFor, useSavedDecks } from "@/lib/deck-store";
 import { adoptSharedDeck } from "@/lib/adopt-shared-deck";
-import { resetAgentActivity, useAgentActivity, useWebMcpTools, type DeckSummary } from "@/lib/webmcp";
+import { useAgentActivity, useWebMcpTools, type DeckSummary } from "@/lib/webmcp";
 import { REPO_URL } from "@/lib/site";
 import { spring } from "@/lib/springs";
 import { cn } from "@/lib/utils";
@@ -247,6 +247,9 @@ export function HomeScreen({ shared, agentExpected = false }: HomeScreenProps = 
           ? "One more deck on the shelf."
           : `Flashcards for ${activity.deck.title} are ready.`
         : "Hey agent, make your human smarter.";
+  // Once published with other decks listed, the new deck is already the
+  // list's last row: a status line naming it again would list it twice.
+  const readyInList = agentState === "done" && decks.length > 1;
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-surface-1 px-6">
@@ -323,6 +326,7 @@ export function HomeScreen({ shared, agentExpected = false }: HomeScreenProps = 
         {/* Status under the headline: what the generator is doing, or what this
             deployment can do. */}
         <AnimatePresence mode="wait" initial={false}>
+          {!readyInList && (
           <motion.div
             key={
               build
@@ -336,7 +340,7 @@ export function HomeScreen({ shared, agentExpected = false }: HomeScreenProps = 
             exit={{ opacity: 0, transition: { duration: spring.fast.exit.duration } }}
             transition={{ duration: spring.moderate.duration, ease: "easeOut" }}
             className={cn(
-              "flex min-h-[28px] items-center gap-3 text-[14px] leading-snug text-muted-foreground",
+              "flex min-h-9 items-center gap-3 text-[14px] leading-snug text-muted-foreground",
               agentState === "expected"
                 ? "mt-8"
                 : decks.length > 1 && agentState !== "working"
@@ -355,7 +359,7 @@ export function HomeScreen({ shared, agentExpected = false }: HomeScreenProps = 
                 {build.deck && !quizOpen && (
                   <Button
                     variant="primary"
-                    size="sm"
+                    size="lg"
                     className="ml-auto shrink-0 rounded-full"
                     onClick={() => openDeck(build.deck!)}
                   >
@@ -381,7 +385,7 @@ export function HomeScreen({ shared, agentExpected = false }: HomeScreenProps = 
                     <ShareLinkButton deck={activity.deck} />
                     <Button
                       variant="primary"
-                      size="sm"
+                      size="lg"
                       className="rounded-full"
                       onClick={() => openDeck(activity.deck)}
                     >
@@ -404,32 +408,32 @@ export function HomeScreen({ shared, agentExpected = false }: HomeScreenProps = 
                     text above instead of the pill's edge. */}
                 {/* Pulled left by the border and the icon's inset so the
                     label sits flush with the headline. */}
-                <AgentPromptButton className="-ml-[15px]" />
+                <AgentPromptButton className="-ml-[17px]" />
               </div>
             )}
           </motion.div>
+          )}
         </AnimatePresence>
 
         {/* The nudge onward, once a deck is done: another deck is one prompt
-            away. The link brings the prompt back. */}
+            away, so the prompt itself is right here to copy. */}
         <AnimatePresence initial={false}>
           {agentState === "done" && (
-            <motion.p
+            <motion.div
               key="nudge"
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0, transition: { duration: spring.moderate.duration, ease: "easeOut" } }}
               exit={{ opacity: 0, transition: { duration: spring.fast.exit.duration } }}
-              className="mt-3 text-[14px] leading-snug text-muted-foreground"
+              className={cn(
+                "flex flex-col items-start gap-4 text-[14px] leading-snug text-muted-foreground",
+                readyInList ? "mt-8" : "mt-6"
+              )}
             >
-              Curious about something else?{" "}
-              <button
-                type="button"
-                onClick={resetAgentActivity}
-                className="cursor-pointer text-foreground underline decoration-foreground/30 underline-offset-2 transition-colors duration-80 hover:decoration-foreground"
-              >
-                Ask your agent for another deck
-              </button>
-            </motion.p>
+              <span>Curious about something else? Ask your agent for another deck.</span>
+              {/* Pulled left by the border and the icon's inset so the
+                  label sits flush with the text above. */}
+              <AgentPromptButton another className="-ml-[17px]" />
+            </motion.div>
           )}
         </AnimatePresence>
       </motion.main>

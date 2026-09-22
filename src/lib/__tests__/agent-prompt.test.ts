@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agentPrompt } from "@/lib/agent-prompt";
+import { agentPrompt, anotherDeckPrompt } from "@/lib/agent-prompt";
 
 describe("agentPrompt", () => {
   const prompt = agentPrompt("https://flashcards.example");
@@ -23,5 +23,19 @@ describe("agentPrompt", () => {
 
   it("stays short enough to ride in a deep link", () => {
     expect(encodeURIComponent(prompt).length).toBeLessThan(4000);
+  });
+});
+
+describe("anotherDeckPrompt", () => {
+  const prompt = anotherDeckPrompt("https://flashcards.example");
+
+  it("points back at the page and asks for new topics", () => {
+    expect(prompt).toContain("https://flashcards.example/agent");
+    expect(prompt).toContain("https://flashcards.example/agents.md");
+    expect(prompt).toMatch(/haven't explored/);
+  });
+
+  it("is much shorter than the full brief", () => {
+    expect(prompt.length).toBeLessThan(agentPrompt("https://flashcards.example").length / 3);
   });
 });

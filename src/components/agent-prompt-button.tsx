@@ -13,7 +13,7 @@ import { motion, useReducedMotion, type Transition } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useIcon } from "@/lib/icon-context";
 import type { IconComponentProps } from "@/lib/icon-map";
-import { agentPrompt } from "@/lib/agent-prompt";
+import { agentPrompt, anotherDeckPrompt } from "@/lib/agent-prompt";
 import { spring } from "@/lib/springs";
 import { cn } from "@/lib/utils";
 
@@ -101,12 +101,19 @@ const subscribeNever = () => () => {};
 const readOrigin = () => window.location.origin;
 const readNothing = () => null;
 
-export function AgentPromptButton({ className }: { className?: string }) {
+export function AgentPromptButton({
+  className,
+  another = false,
+}: {
+  className?: string;
+  /** Copy the short follow-up for a next deck instead of the full brief. */
+  another?: boolean;
+}) {
   // The prompt names this site's URL, so it can only be built in the
   // browser; on the server (and the hydrating render) the button waits
   // for the real origin.
   const origin = useSyncExternalStore(subscribeNever, readOrigin, readNothing);
-  const prompt = origin ? agentPrompt(origin) : null;
+  const prompt = origin ? (another ? anotherDeckPrompt(origin) : agentPrompt(origin)) : null;
 
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -134,12 +141,12 @@ export function AgentPromptButton({ className }: { className?: string }) {
         disabled={!prompt}
         // The button is the pill: one step above the page, like the level
         // cards, so it reads as a control in both themes. 44px tall, with a
-        // 15px label; the Button keeps its own paddings.
+        // 15px label; 16px in front of the icon, 2px more than the Button gives.
         // On press the whole pill scales, border included, instead of the
         // Button's fill layer alone — that would leave the border standing
         // around a shrunken fill, reading as a second, inner border.
         className={cn(
-          "h-11 rounded-full border border-border bg-surface-5 text-[15px] text-foreground",
+          "h-11 rounded-full border border-border bg-surface-5 pl-4 text-[15px] text-foreground",
           "transition-transform duration-80 active:scale-[0.98] [&>span[aria-hidden]]:group-active:scale-100",
           className
         )}
